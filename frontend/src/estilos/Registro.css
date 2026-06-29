@@ -1,0 +1,116 @@
+.pagina-registro {
+  min-height: calc(100vh - 72px);
+  padding: 60px 0;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 70%);
+}
+
+.registro-contenedor {
+  width: min(900px, 92%);
+  margin: 0 auto;
+}
+
+.registro-encabezado {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.registro-encabezado h1 {
+  color: var(--color-secundario);
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.registro-encabezado p {
+  color: var(--color-texto);
+  line-height: 1.7;
+}
+
+.registro-formulario {
+  background-color: var(--color-blanco);
+  border: 1px solid var(--color-borde);
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: var(--sombra-suave);
+}
+
+.registro-grupo {
+  margin-bottom: 18px;
+}
+
+.registro-grupo label {
+  display: block;
+  font-weight: bold;
+  color: var(--color-secundario);
+  margin-bottom: 8px;
+}
+
+.registro-grupo input,
+.registro-grupo select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+  background-color: #ffffff;
+}
+
+.registro-grupo input:focus,
+.registro-grupo select:focus {
+  border-color: var(--color-primario);
+}
+
+.registro-fila {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.registro-subtitulo {
+  margin: 28px 0 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-borde);
+  color: var(--color-secundario);
+  font-size: 22px;
+}
+
+.registro-mensaje {
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.registro-mensaje.exito {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.registro-mensaje.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.registro-acciones {
+  margin-top: 24px;
+}
+
+.registro-acciones button {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .registro-fila {
+    grid-template-columns: 1fr;
+  }
+
+  .registro-formulario {
+    padding: 24px;
+  }
+
+  .registro-encabezado h1 {
+    font-size: 30px;
+  }
+}

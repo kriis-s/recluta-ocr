@@ -1,0 +1,143 @@
+.pagina-ofertas {
+  min-height: calc(100vh - 72px);
+  padding: 60px 0;
+  background-color: var(--color-fondo);
+}
+
+.ofertas-encabezado {
+  margin-bottom: 32px;
+}
+
+.ofertas-encabezado h1 {
+  color: var(--color-secundario);
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.ofertas-encabezado p {
+  color: var(--color-texto);
+  line-height: 1.7;
+  max-width: 760px;
+}
+
+.ofertas-filtros {
+  background-color: var(--color-blanco);
+  border: 1px solid var(--color-borde);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 28px;
+  box-shadow: var(--sombra-suave);
+}
+
+.ofertas-filtros label {
+  display: block;
+  font-weight: bold;
+  color: var(--color-secundario);
+  margin-bottom: 8px;
+}
+
+.ofertas-filtros input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+}
+
+.ofertas-filtros input:focus {
+  border-color: var(--color-primario);
+}
+
+.ofertas-listado {
+  display: grid;
+  gap: 20px;
+}
+
+.oferta-tarjeta {
+  background-color: var(--color-blanco);
+  border: 1px solid var(--color-borde);
+  border-radius: 16px;
+  padding: 26px;
+  box-shadow: var(--sombra-suave);
+}
+
+.oferta-superior {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+
+.oferta-titulo {
+  color: var(--color-secundario);
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.oferta-estado {
+  align-self: flex-start;
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.oferta-detalles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.oferta-detalles span {
+  background-color: #f1f5f9;
+  color: var(--color-texto);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.oferta-descripcion {
+  line-height: 1.7;
+  color: var(--color-texto);
+  margin-bottom: 20px;
+}
+
+.oferta-acciones {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ofertas-vacio {
+  background-color: var(--color-blanco);
+  border: 1px solid var(--color-borde);
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
+  color: var(--color-texto);
+}
+
+@media (max-width: 720px) {
+  .ofertas-encabezado h1 {
+    font-size: 30px;
+  }
+
+  .oferta-superior {
+    flex-direction: column;
+  }
+
+  .oferta-acciones {
+    flex-direction: column;
+  }
+
+  .oferta-acciones a,
+  .oferta-acciones button {
+    width: 100%;
+    text-align: center;
+  }
+}

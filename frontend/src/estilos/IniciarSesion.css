@@ -1,0 +1,110 @@
+.pagina-login {
+  min-height: calc(100vh - 72px);
+  padding: 70px 0;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 70%);
+}
+
+.login-contenedor {
+  width: min(480px, 92%);
+  margin: 0 auto;
+}
+
+.login-encabezado {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-encabezado h1 {
+  color: var(--color-secundario);
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.login-encabezado p {
+  color: var(--color-texto);
+  line-height: 1.7;
+}
+
+.login-formulario {
+  background-color: var(--color-blanco);
+  border: 1px solid var(--color-borde);
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: var(--sombra-suave);
+}
+
+.login-grupo {
+  margin-bottom: 18px;
+}
+
+.login-grupo label {
+  display: block;
+  font-weight: bold;
+  color: var(--color-secundario);
+  margin-bottom: 8px;
+}
+
+.login-grupo input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+}
+
+.login-grupo input:focus {
+  border-color: var(--color-primario);
+}
+
+.login-mensaje {
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.login-mensaje.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.login-mensaje.exito {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.login-acciones {
+  margin-top: 24px;
+}
+
+.login-acciones button {
+  width: 100%;
+}
+
+.login-ayuda {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.login-ayuda a {
+  color: var(--color-primario);
+  font-weight: bold;
+}
+
+@media (max-width: 520px) {
+  .pagina-login {
+    padding: 50px 0;
+  }
+
+  .login-formulario {
+    padding: 24px;
+  }
+
+  .login-encabezado h1 {
+    font-size: 30px;
+  }
+}

@@ -1,0 +1,121 @@
+.pagina-crear-oferta {
+  min-height: calc(100vh - 72px);
+  padding: 60px 0;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 70%);
+}
+
+.crear-oferta-contenedor {
+  width: min(900px, 92%);
+  margin: 0 auto;
+}
+
+.crear-oferta-encabezado {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.crear-oferta-encabezado h1 {
+  color: var(--color-secundario);
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.crear-oferta-encabezado p {
+  color: var(--color-texto);
+  line-height: 1.7;
+}
+
+.crear-oferta-formulario {
+  background-color: var(--color-blanco);
+  border: 1px solid var(--color-borde);
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: var(--sombra-suave);
+}
+
+.crear-oferta-grupo {
+  margin-bottom: 18px;
+}
+
+.crear-oferta-grupo label {
+  display: block;
+  font-weight: bold;
+  color: var(--color-secundario);
+  margin-bottom: 8px;
+}
+
+.crear-oferta-grupo input,
+.crear-oferta-grupo select,
+.crear-oferta-grupo textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: Arial, sans-serif;
+  outline: none;
+  resize: vertical;
+  background-color: #ffffff;
+}
+
+.crear-oferta-grupo input:focus,
+.crear-oferta-grupo select:focus,
+.crear-oferta-grupo textarea:focus {
+  border-color: var(--color-primario);
+}
+
+.crear-oferta-fila {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.crear-oferta-mensaje {
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.crear-oferta-mensaje.exito {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.crear-oferta-mensaje.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.crear-oferta-acciones {
+  display: flex;
+  gap: 14px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .crear-oferta-fila {
+    grid-template-columns: 1fr;
+  }
+
+  .crear-oferta-formulario {
+    padding: 24px;
+  }
+
+  .crear-oferta-encabezado h1 {
+    font-size: 30px;
+  }
+
+  .crear-oferta-acciones {
+    flex-direction: column;
+  }
+
+  .crear-oferta-acciones button,
+  .crear-oferta-acciones a {
+    width: 100%;
+    text-align: center;
+  }
+}
