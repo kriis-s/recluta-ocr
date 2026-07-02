@@ -21,3 +21,9 @@ nav a {
 nav a:hover {
   text-decoration: underline;
 }
+
+.menu-boton-salir {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}

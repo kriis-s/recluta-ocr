@@ -121,4 +121,17 @@ router.get('/perfil', async (req, res) => {
   }
 });
 
+router.post('/cerrar-sesion', (req, res) => {
+  res.clearCookie('token_recluta_ocr', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false
+  });
+
+  return res.json({
+    ok: true,
+    mensaje: 'Sesión cerrada correctamente.'
+  });
+});
+
 module.exports = router;

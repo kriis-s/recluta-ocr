@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const rutasPostulantes = require("./rutas/rutasPostulantes");
 const rutasAutenticacion = require("./rutas/rutasAutenticacion");
+const rutasOfertas = require("./rutas/rutasOfertas");
 
 const conexion = require('./config/conexion');
 
@@ -74,6 +75,7 @@ const PORT = process.env.PORT || 3001;
 
 app.use("/api/postulantes", rutasPostulantes);
 app.use("/api/autenticacion", rutasAutenticacion);
+app.use("/api/ofertas", rutasOfertas);
 app.listen(PORT, () => {
   console.log(`Servidor backend ejecutándose en http://localhost:${PORT}`);
 });
