@@ -1,42 +1,42 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../estilos/OfertasLaborales.css';
 
 function OfertasLaborales() {
   const [busqueda, setBusqueda] = useState('');
+  const [ofertas, setOfertas] = useState([]);
+  const [cargandoOfertas, setCargandoOfertas] = useState(true);
+  const [mensajeOfertas, setMensajeOfertas] = useState('');
 
-  const ofertas = [
-    {
-      id: 1,
-      titulo: 'Operario de bodega',
-      ubicacion: 'Santiago',
-      jornada: 'Turno mañana',
-      modalidad: 'Presencial',
-      estado: 'Activa',
-      descripcion:
-        'Se requiere postulante para apoyar labores operativas de bodega, orden documental y preparación de antecedentes para proceso de contratación.'
-    },
-    {
-      id: 2,
-      titulo: 'Asistente administrativo',
-      ubicacion: 'Recoleta',
-      jornada: 'Lunes a viernes',
-      modalidad: 'Presencial',
-      estado: 'Activa',
-      descripcion:
-        'Cargo orientado a apoyar tareas administrativas, revisión de documentos y gestión de información asociada a procesos internos.'
-    },
-    {
-      id: 3,
-      titulo: 'Ayudante de producción',
-      ubicacion: 'Quilicura',
-      jornada: 'Turnos rotativos',
-      modalidad: 'Presencial',
-      estado: 'Activa',
-      descripcion:
-        'Vacante disponible para postulantes con disponibilidad para turnos y carga documental previa mediante plataforma web.'
+  useEffect(function cargarOfertasLaborales() {
+    async function obtenerOfertasLaborales() {
+      try {
+        setCargandoOfertas(true);
+        setMensajeOfertas('');
+
+        const respuesta = await fetch('http://localhost:3001/api/ofertas/listar');
+        const datosRespuesta = await respuesta.json();
+
+        if (!respuesta.ok) {
+          setMensajeOfertas(
+            datosRespuesta.mensaje || 'No fue posible cargar las ofertas laborales.'
+          );
+          return;
+        }
+
+        setOfertas(datosRespuesta.ofertas || []);
+
+      } catch (error) {
+        console.error('Error al cargar ofertas laborales:', error);
+        setMensajeOfertas('Error de conexión con el servidor.');
+
+      } finally {
+        setCargandoOfertas(false);
+      }
     }
-  ];
+
+    obtenerOfertasLaborales();
+  }, []);
 
   function manejarCambioBusqueda(evento) {
     setBusqueda(evento.target.value);
@@ -82,7 +82,11 @@ function OfertasLaborales() {
         </section>
 
         <section className="ofertas-listado">
-          {ofertasFiltradas.length > 0 ? (
+          {cargandoOfertas ? (
+            <div className="ofertas-vacio">Cargando ofertas laborales...</div>
+          ) : mensajeOfertas ? (
+            <div className="ofertas-vacio">{mensajeOfertas}</div>
+          ) : ofertasFiltradas.length > 0 ? (
             ofertasFiltradas.map(function mostrarOferta(oferta) {
               return (
                 <article className="oferta-tarjeta" key={oferta.id}>

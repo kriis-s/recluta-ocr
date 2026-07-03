@@ -64,4 +64,52 @@ router.post('/crear', verificarReclutador, async (req, res) => {
     }
 });
 
+router.get('/listar', async (req, res) => {
+  try {
+    const [ofertas] = await conexion.query(
+      `SELECT id_oferta, titulo, area, ubicacion, tipo_jornada, descripcion, estado, fecha_publicacion
+       FROM ofertas_laborales
+       WHERE estado = 'ACTIVA'
+       ORDER BY fecha_publicacion DESC`
+    );
+
+    const ofertasFormateadas = ofertas.map(function formatearOferta(oferta) {
+      const descripcion = oferta.descripcion || "";
+      const modalidadEncontrada = descripcion.match(/Modalidad:\s*(.+)/i);
+      const modalidad = modalidadEncontrada ? modalidadEncontrada[1].trim() : "No indicada";
+
+      const descripcionLimpia = descripcion
+        .replace(/Modalidad:.*(\r?\n)?/i, "")
+        .replace(/Descripción:/i, "")
+        .replace(/Requisitos:[\s\S]*/i, "")
+        .trim();
+
+      return {
+        id: oferta.id_oferta,
+        titulo: oferta.titulo,
+        area: oferta.area,
+        ubicacion: oferta.ubicacion,
+        jornada: oferta.tipo_jornada,
+        modalidad: modalidad,
+        estado: oferta.estado === "ACTIVA" ? "Activa" : "Inactiva",
+        descripcion: descripcionLimpia || descripcion,
+        fecha_publicacion: oferta.fecha_publicacion
+      };
+    });
+
+    return res.json({
+      ok: true,
+      ofertas: ofertasFormateadas
+    });
+
+  } catch (error) {
+    console.error("Error al listar ofertas laborales:", error);
+
+    return res.status(500).json({
+      ok: false,
+      mensaje: "Error interno al listar las ofertas laborales."
+    });
+  }
+});
+
 module.exports = router;
