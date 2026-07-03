@@ -4,6 +4,7 @@ import "../estilos/CrearOfertaLaboral.css";
 
 const ofertaLaboralVacia = {
   titulo: "",
+  area: "",
   ubicacion: "",
   jornada: "",
   modalidad: "",
@@ -21,32 +22,20 @@ const jornadasDisponibles = [
 ];
 
 const modalidadesDisponibles = ["Presencial", "Hibrida", "Remota"];
-const estadosDisponibles = ["Activa", "Pausada", "Cerrada"];
-
-function obtenerOfertasLaboralesGuardadas() {
-  const registroLocal = localStorage.getItem("ofertasLaborales");
-
-  if (!registroLocal) {
-    return [];
-  }
-
-  try {
-    const ofertasLaborales = JSON.parse(registroLocal);
-    return Array.isArray(ofertasLaborales) ? ofertasLaborales : [];
-  } catch {
-    return [];
-  }
-}
+const estadosDisponibles = ["Activa", "Inactiva"];
 
 function prepararOfertaLaboral(datosOferta) {
+  const descripcionCompleta = `modalidad: ${datosOferta.modalidad}
+  descripción: ${datosOferta.descripcion.trim()}
+  requisitos: ${datosOferta.requisitos.trim() || "No se especifican requisitos"}`.trim();
+
   return {
     titulo: datosOferta.titulo.trim(),
+    area: datosOferta.area.trim(),
     ubicacion: datosOferta.ubicacion.trim(),
-    jornada: datosOferta.jornada,
-    modalidad: datosOferta.modalidad,
-    descripcion: datosOferta.descripcion.trim(),
-    requisitos: datosOferta.requisitos.trim(),
-    estado: datosOferta.estado
+    tipo_jornada: datosOferta.jornada,
+    descripcion: descripcionCompleta,
+    estado: datosOferta.estado === "Activa" ? "ACTIVA" : "INACTIVA"
   };
 }
 
@@ -54,6 +43,7 @@ function CrearOfertaLaboral() {
   const [datosOferta, setDatosOferta] = useState({ ...ofertaLaboralVacia });
   const [mensajeFormulario, setMensajeFormulario] = useState("");
   const [tipoMensajeFormulario, setTipoMensajeFormulario] = useState("");
+  const [cargando, setCargando] = useState(false);
 
   function manejarCambioCampo(evento) {
     const nombreCampo = evento.target.name;
@@ -69,11 +59,16 @@ function CrearOfertaLaboral() {
 
   function validarOfertaLaboral() {
     const tituloOferta = datosOferta.titulo.trim();
+    const areaOferta = datosOferta.area.trim();
     const ubicacionOferta = datosOferta.ubicacion.trim();
     const descripcionOferta = datosOferta.descripcion.trim();
 
     if (!tituloOferta) {
       return "Debe ingresar el título de la oferta laboral.";
+    }
+
+    if (!areaOferta) {
+      return "Debe ingresar el área de la oferta laboral.";
     }
 
     if (!ubicacionOferta) {
@@ -103,7 +98,7 @@ function CrearOfertaLaboral() {
     setDatosOferta({ ...ofertaLaboralVacia });
   }
 
-  function manejarEnvioFormulario(evento) {
+  async function manejarEnvioFormulario(evento) {
     evento.preventDefault();
 
     const mensajeError = validarOfertaLaboral();
@@ -113,26 +108,46 @@ function CrearOfertaLaboral() {
       setTipoMensajeFormulario("error");
       return;
     }
+    try {
+      setCargando(true);
+      setMensajeFormulario("");
+      setTipoMensajeFormulario("");
+    
 
-    const ofertaValidada = prepararOfertaLaboral(datosOferta);
+      const ofertaPreparada = prepararOfertaLaboral(datosOferta);
 
-    const ofertaLaboral = {
-      id: Date.now(),
-      ...ofertaValidada,
-      fechaCreacion: new Date().toLocaleDateString("es-CL")
-    };
+      const respuesta = await fetch("http://localhost:3001/api/ofertas/crear", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include",
+      body: JSON.stringify(ofertaPreparada)
+    });
 
-    // Guardado temporal mientras se conecta el módulo con backend y MySQL.
-    const ofertasRegistradas = obtenerOfertasLaboralesGuardadas();
-    const listadoActualizado = [...ofertasRegistradas, ofertaLaboral];
+    const datosRespuesta = await respuesta.json();
 
-    localStorage.setItem("ofertasLaborales", JSON.stringify(listadoActualizado));
+    if (!respuesta.ok) {
+      setMensajeFormulario(datosRespuesta.mensaje || datosRespuesta.error || "Error al crear la oferta laboral.");
+      setTipoMensajeFormulario("error");
+      setCargando(false);
+      return;
+    }
 
     setMensajeFormulario("Oferta laboral creada correctamente.");
     setTipoMensajeFormulario("exito");
     limpiarDatosFormulario();
-  }
 
+  } catch (error) {
+    console.error("Error al crear la oferta laboral:", error);
+
+    setMensajeFormulario("Error al crear la oferta laboral. Intente nuevamente.");
+    setTipoMensajeFormulario("error");
+
+  } finally {
+    setCargando(false);
+  }
+}    
   return (
     <main className="pagina-crear-oferta">
       <div className="crear-oferta-contenedor">
@@ -161,6 +176,20 @@ function CrearOfertaLaboral() {
               onChange={manejarCambioCampo}
               placeholder="Ejemplo: Operario de bodega"
             />
+          </div>
+
+          <div className="crear-oferta-fila">
+            <div className="crear-oferta-grupo">
+              <label htmlFor="area">Área</label>
+              <input
+                type="text"
+                id="area"
+                name="area"
+                value={datosOferta.area}
+                onChange={manejarCambioCampo}
+                placeholder="Ejemplo: Logística"
+              />
+            </div>
           </div>
 
           <div className="crear-oferta-fila">
@@ -261,8 +290,8 @@ function CrearOfertaLaboral() {
           </div>
 
           <div className="crear-oferta-acciones">
-            <button type="submit" className="boton-principal">
-              Crear oferta
+            <button type="submit" className="boton-principal" disabled={cargando}>  
+              {cargando ? "Creando..." : "Crear oferta"}
             </button>
 
             <Link to="/panel-reclutador" className="boton-secundario">
