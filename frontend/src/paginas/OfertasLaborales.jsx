@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import '../estilos/OfertasLaborales.css';
 
 function OfertasLaborales() {
@@ -7,6 +6,9 @@ function OfertasLaborales() {
   const [ofertas, setOfertas] = useState([]);
   const [cargandoOfertas, setCargandoOfertas] = useState(true);
   const [mensajeOfertas, setMensajeOfertas] = useState('');
+  const [mensajePostulacion, setMensajePostulacion] = useState('');
+  const [tipoMensajePostulacion, setTipoMensajePostulacion] = useState(''); // 'exito' o 'error'
+  const [ofertaProcesando, setOfertaProcesando] = useState(null);
 
   useEffect(function cargarOfertasLaborales() {
     async function obtenerOfertasLaborales() {
@@ -58,6 +60,46 @@ function OfertasLaborales() {
 
   const ofertasFiltradas = ofertas.filter(coincideConBusqueda);
 
+  async function manejarPostulacion(idOferta) {
+  try {
+    setOfertaProcesando(idOferta);
+    setMensajePostulacion('');
+    setTipoMensajePostulacion('');
+
+    const respuesta = await fetch('http://localhost:3001/api/postulaciones/crear', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        id_oferta: idOferta
+      })
+    });
+
+    const datosRespuesta = await respuesta.json();
+
+    if (!respuesta.ok) {
+      setMensajePostulacion(
+        datosRespuesta.mensaje || 'No fue posible realizar la postulación.'
+      );
+      setTipoMensajePostulacion('error');
+      return;
+    }
+
+    setMensajePostulacion('Postulación realizada correctamente.');
+    setTipoMensajePostulacion('exito');
+
+  } catch (error) {
+    console.error('Error al postular:', error);
+    setMensajePostulacion('Error de conexión con el servidor.');
+    setTipoMensajePostulacion('error');
+
+  } finally {
+    setOfertaProcesando(null);
+  }
+}
+
   return (
     <main className="pagina-ofertas">
       <div className="contenedor">
@@ -82,6 +124,11 @@ function OfertasLaborales() {
         </section>
 
         <section className="ofertas-listado">
+          {mensajePostulacion && (
+            <div className={`ofertas-mensaje ${tipoMensajePostulacion}`}>
+              {mensajePostulacion}
+            </div>
+          )}
           {cargandoOfertas ? (
             <div className="ofertas-vacio">Cargando ofertas laborales...</div>
           ) : mensajeOfertas ? (
@@ -107,9 +154,14 @@ function OfertasLaborales() {
                   <p className="oferta-descripcion">{oferta.descripcion}</p>
 
                   <div className="oferta-acciones">
-                    <Link to="/registro" className="boton-principal">
-                      Postular
-                    </Link>
+                    <button
+                      type="button"
+                      className="boton-principal"
+                      onClick={() => manejarPostulacion(oferta.id)}
+                      disabled={ofertaProcesando === oferta.id}
+                    >
+                      {ofertaProcesando === oferta.id ? 'Postulando...' : 'Postular'}
+                    </button>
 
                     <button type="button" className="boton-secundario">
                       Ver detalle
