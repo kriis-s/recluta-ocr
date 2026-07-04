@@ -2,6 +2,10 @@
 node_modules/
 backend/node_modules/
 frontend/node_modules/
+backend/archivos/documentos/*
+backend/archivos/documentos/archivo.pdf
+backend/cookies.txt
+backend/login.json
 
 # Variables de entorno
 .env

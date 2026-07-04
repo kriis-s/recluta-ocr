@@ -7,6 +7,7 @@ const rutasPostulantes = require("./rutas/rutasPostulantes");
 const rutasAutenticacion = require("./rutas/rutasAutenticacion");
 const rutasOfertas = require("./rutas/rutasOfertas");
 const rutasPostulaciones = require("./rutas/rutasPostulaciones");
+const rutasDocumentos = require("./rutas/rutasDocumentos");
 
 const conexion = require('./config/conexion');
 
@@ -78,6 +79,7 @@ app.use("/api/postulantes", rutasPostulantes);
 app.use("/api/autenticacion", rutasAutenticacion);
 app.use("/api/ofertas", rutasOfertas);
 app.use("/api/postulaciones", rutasPostulaciones);
+app.use("/api/documentos", rutasDocumentos);
 app.listen(PORT, () => {
   console.log(`Servidor backend ejecutándose en http://localhost:${PORT}`);
 });
