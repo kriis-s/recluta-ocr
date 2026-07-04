@@ -132,4 +132,39 @@ router.post('/crear', verificarPostulante, async (req, res) => {
   }
 });
 
+router.get('/mis-postulaciones', verificarPostulante, async (req, res) => {
+    try {
+        const [datosPostulante] = await conexion.query(
+            `SELECT p.id_postulante, p.rut, p.nombres, p.apellido_paterno, p.apellido_materno, p.telefono, p.direccion, u.correo
+             FROM postulantes p
+             LEFT JOIN usuarios u ON p.id_usuario = u.id_usuario
+             WHERE p.id_postulante = ?`,
+            [req.id_postulante]
+        );
+
+        const [postulaciones] = await conexion.query(
+            `SELECT po.id_postulacion, o.titulo AS cargo, DATE_FORMAT(po.fecha_postulacion, '%d/%m/%y') AS fecha,
+             e.nombre_estado AS estado
+             FROM postulaciones po
+             INNER JOIN ofertas_laborales o ON po.id_oferta = o.id_oferta
+             INNER JOIN estados_postulacion e ON po.id_estado = e.id_estado
+             WHERE po.id_postulante = ?
+             ORDER BY po.fecha_postulacion DESC`,
+            [req.id_postulante]
+        );
+
+        return res.json({
+            ok: true,
+            postulante: datosPostulante[0],
+            postulaciones
+        });
+
+    } catch (error) {
+        console.error('Error al obtener postulaciones:', error);
+        return res.status(500).json({
+            ok: false,
+            mensaje: 'Error interno al obtener las postulaciones.'
+        });
+    }
+});
 module.exports = router;

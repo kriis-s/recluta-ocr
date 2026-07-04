@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../estilos/PanelPostulante.css';
 
 function PanelPostulante() {
@@ -6,51 +6,59 @@ function PanelPostulante() {
   const [archivo, setArchivo] = useState(null);
   const [mensaje, setMensaje] = useState('');
   const [tipoMensaje, setTipoMensaje] = useState('');
+  const [postulante, setPostulante] = useState(null);
+  const [postulaciones, setPostulaciones] = useState([]);
+  const [cargandoPanel, setCargandoPanel] = useState(true);
+  const [mensajePanel, setMensajePanel] = useState('');
 
-  const postulante = {
-    nombre: 'Juan Pérez',
-    rut: '12345678-9',
-    correo: 'juan@test.cl',
-    telefono: '912345678',
-    comuna: 'Santiago'
-  };
+  
+  const documentos = [];
 
-  const postulaciones = [
-    {
-      id: 1,
-      cargo: 'Operario de bodega',
-      fecha: '26/06/2026',
-      estado: 'En revisión',
-      claseEstado: 'en-revision'
-    },
-    {
-      id: 2,
-      cargo: 'Asistente administrativo',
-      fecha: '24/06/2026',
-      estado: 'Recibida',
-      claseEstado: 'recibida'
+  useEffect(function cargarDatosPanel() {
+    async function obtenerDatosPanel() {
+      try {
+        setCargandoPanel(true);
+        setMensajePanel('');
+
+        const respuesta = await fetch('http://localhost:3001/api/postulaciones/mis-postulaciones', {
+          method: 'GET',
+          credentials: 'include'
+        });
+
+        const datosRespuesta = await respuesta.json();
+
+        if (!respuesta.ok) {
+          setMensajePanel(
+            datosRespuesta.mensaje || 'No fue posible cargar los datos del panel.'
+          );
+          return;
+        }
+
+        setPostulante(datosRespuesta.postulante);
+        setPostulaciones(datosRespuesta.postulaciones || []);
+      
+      } catch (error) {
+        console.error('Error al cargar los datos del panel:', error);
+        setMensajePanel('Error de conexión con el servidor.');
+      } finally {
+        setCargandoPanel(false);
+      }
     }
-  ];
 
-  const documentos = [
-    {
-      id: 1,
-      tipo: 'Cédula de identidad',
-      archivo: 'cedula_juan.pdf',
-      estado: 'Procesado'
-    },
-    {
-      id: 2,
-      tipo: 'Currículum vitae',
-      archivo: 'cv_juan.pdf',
-      estado: 'Cargado'
-    }
-  ];
+    obtenerDatosPanel();
+  }, []);
 
+  function obtenerClaseEstado(estado) {
+    if (!estado) { return '';}
+
+    return estado.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-');
+  }
   function manejarCambioTipoDocumento(evento) {
     setTipoDocumento(evento.target.value);
   }
-
   function manejarArchivo(evento) {
     const archivoSeleccionado = evento.target.files[0];
 
@@ -58,10 +66,9 @@ function PanelPostulante() {
       setArchivo(null);
       return;
     }
-
+    
     setArchivo(archivoSeleccionado);
   }
-
   function manejarEnvioDocumento(evento) {
     evento.preventDefault();
 
@@ -111,27 +118,30 @@ function PanelPostulante() {
             <div className="panel-datos">
               <div className="panel-dato">
                 <span>Nombre</span>
-                <strong>{postulante.nombre}</strong>
+                <strong>
+                  {postulante ? `${postulante.nombres} ${postulante.apellido_paterno} ${postulante.apellido_materno || ''}`
+                   : 'cargando...'}
+                </strong>
               </div>
 
               <div className="panel-dato">
                 <span>RUT</span>
-                <strong>{postulante.rut}</strong>
+                <strong>{postulante?.rut || 'cargando...'}</strong>
               </div>
 
               <div className="panel-dato">
                 <span>Correo</span>
-                <strong>{postulante.correo}</strong>
+                <strong>{postulante?.correo || 'cargando...'}</strong>
               </div>
 
               <div className="panel-dato">
                 <span>Teléfono</span>
-                <strong>{postulante.telefono}</strong>
+                <strong>{postulante?.telefono || 'cargando...'}</strong>
               </div>
 
               <div className="panel-dato">
-                <span>Comuna</span>
-                <strong>{postulante.comuna}</strong>
+                <span>Dirección</span>
+                <strong>{postulante?.direccion || 'cargando...'}</strong>
               </div>
             </div>
           </aside>
@@ -141,16 +151,23 @@ function PanelPostulante() {
               <h2>Mis postulaciones</h2>
 
               <div className="panel-listado">
-                {postulaciones.map(function mostrarPostulacion(postulacion) {
+                {cargandoPanel && (
+                  <p>cargando postulaciones...</p>
+                )}
+                {!cargandoPanel && mensajePanel && (
+                  <div className="panel-mensaje error">{mensajePanel}</div>
+                )}
+
+                {!cargandoPanel && !mensajePanel && postulaciones.map(function mostrarPostulacion(postulacion) {
                   return (
-                    <article className="panel-postulacion" key={postulacion.id}>
+                    <article className="panel-postulacion" key={postulacion.id_postulacion}>
                       <div className="panel-postulacion-superior">
                         <div>
                           <h3>{postulacion.cargo}</h3>
                           <p>Fecha de postulación: {postulacion.fecha}</p>
                         </div>
 
-                        <span className={`panel-estado ${postulacion.claseEstado}`}>
+                        <span className={`panel-estado ${obtenerClaseEstado(postulacion.estado)}`}>
                           {postulacion.estado}
                         </span>
                       </div>
@@ -205,18 +222,9 @@ function PanelPostulante() {
               <h2>Documentos cargados</h2>
 
               <div className="panel-documentos">
-                {documentos.map(function mostrarDocumento(documento) {
-                  return (
-                    <div className="panel-documento" key={documento.id}>
-                      <div>
-                        <strong>{documento.tipo}</strong>
-                        <span>{documento.archivo}</span>
-                      </div>
-
-                      <span>{documento.estado}</span>
-                    </div>
-                  );
-                })}
+                {documentos.length === 0 && (
+                  <p>Aún no tienes documentos cargados.</p>
+                )}
               </div>
             </div>
           </section>
