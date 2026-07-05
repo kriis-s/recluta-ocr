@@ -1,69 +1,45 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../estilos/PanelReclutador.css';
 
 function PanelReclutador() {
   const [busqueda, setBusqueda] = useState('');
-
-  const ofertas = [
-    {
-      id: 1,
-      titulo: 'Operario de bodega',
-      ubicacion: 'Santiago',
-      postulantes: 18,
-      estado: 'Activa'
-    },
-    {
-      id: 2,
-      titulo: 'Asistente administrativo',
-      ubicacion: 'Recoleta',
-      postulantes: 9,
-      estado: 'Activa'
-    },
-    {
-      id: 3,
-      titulo: 'Ayudante de producción',
-      ubicacion: 'Quilicura',
-      postulantes: 14,
-      estado: 'Activa'
-    }
-  ];
-
-  const postulantes = [
-    {
-      id: 1,
-      nombre: 'Juan Pérez',
-      rut: '12345678-9',
-      oferta: 'Operario de bodega',
-      documentos: '3 documentos cargados',
-      ocr: 'Cédula procesada',
-      estado: 'En revisión',
-      claseEstado: 'en-revision'
-    },
-    {
-      id: 2,
-      nombre: 'María González',
-      rut: '11222333-4',
-      oferta: 'Asistente administrativo',
-      documentos: '2 documentos cargados',
-      ocr: 'Pendiente OCR',
-      estado: 'En revisión',
-      claseEstado: 'en-revision'
-    },
-    {
-      id: 3,
-      nombre: 'Carlos Muñoz',
-      rut: '99888777-6',
-      oferta: 'Ayudante de producción',
-      documentos: '4 documentos cargados',
-      ocr: 'Documentos procesados',
-      estado: 'Seleccionado',
-      claseEstado: 'seleccionado'
-    }
-  ];
+  const [ofertas, setOfertas] = useState([]);
+  const [postulantes, setPostulantes] = useState([]);
+  const [resumen, setResumen] = useState({ofertas_activas: 0, total_postulantes: 0, documentos_cargados: 0, documentos_procesados: 0 });
+  const [cargandoPanel, setCargandoPanel] = useState(true);
+  const [mensajePanel, setMensajePanel] = useState('');
+  
 
   function manejarCambioBusqueda(evento) {
     setBusqueda(evento.target.value);
+  }
+
+  function obtenerClaseEstado(estado) {
+    if (!estado) {
+      return 'recibida';
+    }
+
+    return estado
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[á]/g, 'a')
+      .replace(/[é]/g, 'e')
+      .replace(/[í]/g, 'i')
+      .replace(/[ó]/g, 'o')
+      .replace(/[ú]/g, 'u');
+  }
+
+  function obtenerEstadoOcr(postulante) {
+    if (Number(postulante.cantidad_documentos) === 0) {
+      return 'Sin documentos cargados';
+    }
+
+    if (Number(postulante.documentos_procesados) === Number(postulante.cantidad_documentos)) {
+      return 'Documentos procesados';
+    }
+
+    return 'Pendiente OCR';
   }
 
   function coincideConFiltro(postulante) {
@@ -83,6 +59,57 @@ function PanelReclutador() {
 
   const postulantesFiltrados = postulantes.filter(coincideConFiltro);
 
+  useEffect(function cargarPanelReclutador() {
+  let componenteActivo = true;
+
+  async function obtenerPanelReclutador() {
+      try {
+        const respuesta = await fetch(
+          'http://localhost:3001/api/reclutador/panel',
+          {
+            method: 'GET',
+            credentials: 'include'
+          }
+        );
+
+        const datosRespuesta = await respuesta.json();
+
+        if (!componenteActivo) {
+          return;
+        }
+
+        if (!respuesta.ok) {
+          setMensajePanel(
+            datosRespuesta.mensaje || 'No fue posible cargar el panel del reclutador.'
+          );
+          return;
+        }
+
+        setResumen(datosRespuesta.resumen || {});
+        setOfertas(datosRespuesta.ofertas || []);
+        setPostulantes(datosRespuesta.postulantes || []);
+
+      } catch (error) {
+        console.error('Error al cargar panel reclutador:', error);
+
+        if (componenteActivo) {
+          setMensajePanel('Error de conexión con el servidor.');
+        }
+
+      } finally {
+        if (componenteActivo) {
+          setCargandoPanel(false);
+        }
+      }
+    }
+
+    obtenerPanelReclutador();
+
+    return function limpiarCarga() {
+      componenteActivo = false;
+    };
+  }, []);
+
   return (
     <main className="pagina-panel-reclutador">
       <div className="contenedor">
@@ -100,29 +127,41 @@ function PanelReclutador() {
             </Link>
           </div>
         </section>
+        {cargandoPanel && (
+          <div className="reclutador-vacio">
+            Cargando información del panel...
+          </div>
+        )}
 
+        {!cargandoPanel && mensajePanel && (
+          <div className="reclutador-vacio">
+            {mensajePanel}
+          </div>
+        )}
+        {!cargandoPanel && !mensajePanel && (
+        <>
         <section className="panel-reclutador-resumen">
           <article className="reclutador-indicador">
             <span>Ofertas activas</span>
-            <strong>3</strong>
+            <strong>{resumen.ofertas_activas || 0}</strong>
           </article>
 
           <article className="reclutador-indicador">
             <span>Postulantes</span>
-            <strong>41</strong>
+            <strong>{resumen.total_postulantes || 0}</strong>
           </article>
 
           <article className="reclutador-indicador">
             <span>Documentos cargados</span>
-            <strong>96</strong>
+            <strong>{resumen.documentos_cargados || 0}</strong>
           </article>
 
           <article className="reclutador-indicador">
             <span>Procesados OCR</span>
-            <strong>68</strong>
+            <strong>{resumen.documentos_procesados || 0}</strong>
           </article>
         </section>
-
+        
         <section className="panel-reclutador-grid">
           <div className="reclutador-tarjeta">
             <h2>Ofertas laborales</h2>
@@ -130,12 +169,12 @@ function PanelReclutador() {
             <div className="reclutador-listado">
               {ofertas.map(function mostrarOferta(oferta) {
                 return (
-                  <article className="reclutador-oferta" key={oferta.id}>
+                  <article className="reclutador-oferta" key={oferta.id_oferta}>
                     <h3>{oferta.titulo}</h3>
                     <p>Ubicación: {oferta.ubicacion}</p>
                     <p>Postulantes asociados: {oferta.postulantes}</p>
 
-                    <span className="reclutador-estado activa">
+                    <span className={`reclutador-estado ${obtenerClaseEstado(oferta.estado)}`}>
                       {oferta.estado}
                     </span>
 
@@ -172,14 +211,14 @@ function PanelReclutador() {
               {postulantesFiltrados.length > 0 ? (
                 postulantesFiltrados.map(function mostrarPostulante(postulante) {
                   return (
-                    <article className="reclutador-postulante" key={postulante.id}>
+                    <article className="reclutador-postulante" key={postulante.id_postulacion}>
                       <h3>{postulante.nombre}</h3>
                       <p>RUT: {postulante.rut}</p>
                       <p>Oferta: {postulante.oferta}</p>
-                      <p>{postulante.documentos}</p>
-                      <p>Estado OCR: {postulante.ocr}</p>
+                      <p>{postulante.cantidad_documentos || 0} documentos cargados</p>
+                      <p>Estado OCR: {obtenerEstadoOcr(postulante)}</p>
 
-                      <span className={`reclutador-estado ${postulante.claseEstado}`}>
+                      <span className={`reclutador-estado ${obtenerClaseEstado(postulante.estado)}`}>
                         {postulante.estado}
                       </span>
 
@@ -203,6 +242,8 @@ function PanelReclutador() {
             </div>
           </div>
         </section>
+      </>
+      )}
       </div>
     </main>
   );
