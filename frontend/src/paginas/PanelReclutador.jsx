@@ -4,6 +4,7 @@ import '../estilos/PanelReclutador.css';
 
 function PanelReclutador() {
   const [busqueda, setBusqueda] = useState('');
+  const [ofertaSeleccionada, setOfertaSeleccionada] = useState();
   const [ofertas, setOfertas] = useState([]);
   const [postulantes, setPostulantes] = useState([]);
   const [resumen, setResumen] = useState({ofertas_activas: 0, total_postulantes: 0, documentos_cargados: 0, documentos_procesados: 0 });
@@ -13,6 +14,14 @@ function PanelReclutador() {
 
   function manejarCambioBusqueda(evento) {
     setBusqueda(evento.target.value);
+  }
+  function manejarSeleccionOferta(idOferta) {
+  setOfertaSeleccionada(idOferta);
+  setBusqueda('');
+  }
+
+  function limpiarFiltroOferta() {
+    setOfertaSeleccionada('');
   }
 
   function obtenerClaseEstado(estado) {
@@ -57,7 +66,13 @@ function PanelReclutador() {
     );
   }
 
-  const postulantesFiltrados = postulantes.filter(coincideConFiltro);
+  const postulantesFiltrados = postulantes.filter(function filtrarPostulantes(postulante) {
+    const coincideOferta =
+      !ofertaSeleccionada ||
+      Number(postulante.id_oferta) === Number(ofertaSeleccionada);
+
+    return coincideOferta && coincideConFiltro(postulante);
+  });
 
   useEffect(function cargarPanelReclutador() {
   let componenteActivo = true;
@@ -179,7 +194,7 @@ function PanelReclutador() {
                     </span>
 
                     <div className="reclutador-acciones">
-                      <button type="button" className="reclutador-boton-secundario">
+                      <button type="button" className="reclutador-boton-secundario" onClick={() => manejarSeleccionOferta(oferta.id_oferta)}>
                         Ver postulantes
                       </button>
 
@@ -198,14 +213,21 @@ function PanelReclutador() {
 
             <div className="reclutador-filtros">
               <label htmlFor="busquedaPostulante">Buscar postulante</label>
-              <input
-                type="text"
-                id="busquedaPostulante"
-                value={busqueda}
-                onChange={manejarCambioBusqueda}
-                placeholder="Buscar por nombre, RUT, oferta o estado"
-              />
+              <input type="text" id="busquedaPostulante" value={busqueda} onChange={manejarCambioBusqueda} placeholder="Buscar por nombre, RUT, oferta o estado"/>
             </div>
+              {ofertaSeleccionada && (
+                <div className="reclutador-filtro-activo">
+                  <span>Mostrando postulantes de una oferta seleccionada.</span>
+
+                  <button
+                    type="button"
+                    className="reclutador-boton-secundario"
+                    onClick={limpiarFiltroOferta}
+                  >
+                    Ver todos
+                  </button>
+                </div>
+              )}
 
             <div className="reclutador-listado">
               {postulantesFiltrados.length > 0 ? (
@@ -223,9 +245,9 @@ function PanelReclutador() {
                       </span>
 
                       <div className="reclutador-acciones">
-                        <button type="button" className="boton-principal">
+                        <Link to={`/reclutador/postulacion/${postulante.id_postulacion}`} className="boton-principal">
                           Revisar
-                        </button>
+                        </Link>
 
                         <button type="button" className="reclutador-boton-secundario">
                           Cambiar estado

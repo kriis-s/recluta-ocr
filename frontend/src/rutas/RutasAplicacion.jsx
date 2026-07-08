@@ -8,6 +8,7 @@ import PanelReclutador from '../paginas/PanelReclutador';
 import NoEncontrado from '../paginas/NoEncontrado';
 import CrearOfertaLaboral from '../paginas/CrearOfertaLaboral';
 import RutaProtegida from './RutaProtegida';
+import DetallePostulante from '../paginas/DetallePostulante';
 
 function RutasAplicacion() {
   return (
@@ -16,7 +17,7 @@ function RutasAplicacion() {
       <Route path="/iniciar-sesion" element={<IniciarSesion />} />
       <Route path="/registro" element={<Registro />} />
       <Route path="/ofertas" element={<OfertasLaborales />} />
-
+      <Route path="/reclutador/postulacion/:id_postulacion" element={<DetallePostulante />} />
       <Route
         path="/panel-postulante"
         element={
@@ -45,7 +46,9 @@ function RutasAplicacion() {
       />
 
       <Route path="*" element={<NoEncontrado />} />
+      
     </Routes>
+    
   );
 }
 

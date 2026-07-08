@@ -2,10 +2,17 @@
 node_modules/
 backend/node_modules/
 frontend/node_modules/
+
+# Archivos cargados por usuarios
 backend/archivos/documentos/*
-backend/archivos/documentos/archivo.pdf
+
+# Archivos temporales de prueba
 backend/cookies.txt
 backend/login.json
+
+# Credenciales
+backend/credenciales/
+*.json
 
 # Variables de entorno
 .env
