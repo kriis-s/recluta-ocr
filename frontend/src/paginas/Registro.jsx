@@ -6,6 +6,7 @@ const formularioInicial = {
   nombre: '',
   apellido: '',
   apellidoMaterno: '',
+  sexo: '',
   correo: '',
   contrasena: '',
   confirmarContrasena: '',
@@ -40,6 +41,10 @@ function Registro() {
 
     if (!formulario.apellido.trim()) {
       return 'Debe ingresar el apellido.';
+    }
+
+    if (formulario.rol === 'postulante' && !formulario.sexo) {
+      return 'Debe seleccionar el sexo del postulante.';
     }
 
     if (!formulario.correo.trim()) {
@@ -81,7 +86,8 @@ function Registro() {
       apellido_materno: formulario.apellidoMaterno.trim() || null,
       fecha_nacimiento: formulario.fechaNacimiento || null,
       telefono: formulario.telefono.trim() || null,
-      direccion: direccionCompleta || null
+      direccion: direccionCompleta || null,
+      sexo: formulario.sexo.trim() || null
     };
   }
 
@@ -211,6 +217,15 @@ function Registro() {
                     onChange={manejarCambio}
                     placeholder="Ingrese su apellido materno"
                   />
+                </div>
+
+                <div className="registro-grupo">
+                  <label htmlFor="sexo">Sexo</label>
+                  <select id="sexo" name="sexo" value={formulario.sexo} onChange={manejarCambio}>
+                    <option value="">Seleccione sexo</option>
+                    <option value="MASCULINO">Masculino</option>
+                    <option value="FEMENINO">Femenino</option>
+                  </select>
                 </div>
               </div>
 

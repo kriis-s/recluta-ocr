@@ -2,8 +2,10 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const conexion = require('../config/conexion');
 const path = require('path');
+const ExcelJS = require('exceljs');
 const { procesarDocumentoConOcr } = require('../servicios/servicioOcr');
 const router = express.Router();
+
 
 function normalizarTexto(texto) {
   if (!texto) {
@@ -554,6 +556,193 @@ router.put('/postulacion/:id_postulacion/estado', verificarReclutador, async (re
     return res.status(500).json({
       ok: false,
       mensaje: 'Error interno al cambiar el estado de la postulación.'
+    });
+  }
+});
+
+router.post('/exportar-excel-final', verificarReclutador, async (req, res) => {
+  const { id_postulaciones } = req.body || {};
+
+  if (!Array.isArray(id_postulaciones) || id_postulaciones.length === 0) {
+    return res.status(400).json({
+      ok: false,
+      mensaje: 'Debe seleccionar al menos un postulante para exportar.'
+    });
+  }
+
+  if (id_postulaciones.length > 10) {
+    return res.status(400).json({
+      ok: false,
+      mensaje: 'Solo puede exportar un máximo de 10 postulantes por archivo.'
+    });
+  }
+
+  try {
+    const signos = id_postulaciones.map(() => '?').join(',');
+
+    const [postulaciones] = await conexion.query(
+      `SELECT
+        po.id_postulacion,
+        ep.nombre_estado AS estado,
+        p.id_postulante,
+        p.rut,
+        p.nombres,
+        p.apellido_paterno,
+        p.apellido_materno,
+        p.fecha_nacimiento,
+        p.sexo,
+        p.direccion,
+        o.titulo AS cargo,
+        o.empresa,
+        o.sueldo
+       FROM postulaciones po
+       INNER JOIN postulantes p ON po.id_postulante = p.id_postulante
+       INNER JOIN ofertas_laborales o ON po.id_oferta = o.id_oferta
+       INNER JOIN estados_postulacion ep ON po.id_estado = ep.id_estado
+       WHERE po.id_postulacion IN (${signos})
+       AND o.id_reclutador = ?
+       AND ep.nombre_estado = 'Seleccionado'
+       ORDER BY p.apellido_paterno ASC, p.apellido_materno ASC, p.nombres ASC`,
+      [...id_postulaciones, req.id_reclutador]
+    );
+
+    if (postulaciones.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: 'No se encontraron postulantes seleccionados para exportar.'
+      });
+    }
+
+    const idPostulantes = postulaciones.map(function obtenerId(postulacion) {
+      return postulacion.id_postulante;
+    });
+
+    const signosPostulantes = idPostulantes.map(() => '?').join(',');
+
+    const [documentosOcr] = await conexion.query(
+      `SELECT
+        d.id_postulante,
+        d.tipo_documento,
+        ocr.institucion_detectada
+       FROM documentos d
+       LEFT JOIN datos_ocr ocr ON ocr.id_documento = d.id_documento
+       WHERE d.id_postulante IN (${signosPostulantes})
+       AND d.tipo_documento IN ('CERTIFICADO_SALUD', 'CERTIFICADO_PREVISIONAL')`,
+      idPostulantes
+    );
+
+    function obtenerInstitucion(idPostulante, tipoDocumento) {
+      const documento = documentosOcr.find(function buscarDocumento(item) {
+        return (
+          Number(item.id_postulante) === Number(idPostulante) &&
+          item.tipo_documento === tipoDocumento
+        );
+      });
+
+      return documento?.institucion_detectada || 'Pendiente OCR';
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Recluta OCR';
+    workbook.created = new Date();
+
+    const hoja = workbook.addWorksheet('Archivo final');
+
+    hoja.columns = [
+      { header: 'RUT', key: 'rut', width: 15 },
+      { header: 'Nombre completo', key: 'nombre_completo', width: 35 },
+      { header: 'Fecha nacimiento', key: 'fecha_nacimiento', width: 18 },
+      { header: 'Sexo', key: 'sexo', width: 14 },
+      { header: 'Dirección', key: 'direccion', width: 40 },
+      { header: 'Cargo', key: 'cargo', width: 30 },
+      { header: 'Empresa', key: 'empresa', width: 28 },
+      { header: 'Sueldo', key: 'sueldo', width: 15 },
+      { header: 'AFP', key: 'afp', width: 25 },
+      { header: 'Salud', key: 'salud', width: 25 }
+    ];
+
+    postulaciones.forEach(function agregarFila(postulacion) {
+      const nombreCompleto = [
+        postulacion.nombres,
+        postulacion.apellido_paterno,
+        postulacion.apellido_materno
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      hoja.addRow({
+        rut: postulacion.rut,
+        nombre_completo: nombreCompleto,
+        fecha_nacimiento: postulacion.fecha_nacimiento,
+        sexo: postulacion.sexo || 'No registrado',
+        direccion: postulacion.direccion || 'No registrada',
+        cargo: postulacion.cargo || 'No registrado',
+        empresa: postulacion.empresa || 'No registrada',
+        sueldo: Number(postulacion.sueldo || 0),
+        afp: obtenerInstitucion(postulacion.id_postulante, 'CERTIFICADO_PREVISIONAL'),
+        salud: obtenerInstitucion(postulacion.id_postulante, 'CERTIFICADO_SALUD')
+      });
+    });
+
+    hoja.getRow(1).font = {
+      bold: true,
+      color: { argb: 'FFFFFFFF' }
+    };
+
+    hoja.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1F3556' }
+    };
+
+    hoja.getRow(1).alignment = {
+      vertical: 'middle',
+      horizontal: 'center'
+    };
+
+    hoja.getRow(1).height = 22;
+
+    hoja.getColumn('fecha_nacimiento').numFmt = 'dd-mm-yyyy';
+    hoja.getColumn('sueldo').numFmt = '$ #,##0';
+
+    hoja.eachRow(function aplicarEstilos(fila) {
+      fila.eachCell(function aplicarEstiloCelda(celda) {
+        celda.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+
+        celda.alignment = {
+          vertical: 'middle',
+          wrapText: true
+        };
+      });
+    });
+
+    const fecha = new Date().toISOString().slice(0, 10);
+    const nombreArchivo = `archivo_final_postulantes_${fecha}.xlsx`;
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${nombreArchivo}"`
+    );
+
+    await workbook.xlsx.write(res);
+    return res.end();
+
+  } catch (error) {
+    console.error('Error al exportar Excel final:', error);
+
+    return res.status(500).json({
+      ok: false,
+      mensaje: 'Error interno al exportar el Excel final.'
     });
   }
 });

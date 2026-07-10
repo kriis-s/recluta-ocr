@@ -10,6 +10,8 @@ const ofertaLaboralVacia = {
   modalidad: "",
   descripcion: "",
   requisitos: "",
+  empresa: "",
+  sueldo: "",
   estado: "Activa"
 };
 
@@ -31,6 +33,8 @@ function prepararOfertaLaboral(datosOferta) {
 
   return {
     titulo: datosOferta.titulo.trim(),
+    empresa: datosOferta.empresa.trim(),
+    sueldo: Number(datosOferta.sueldo),
     area: datosOferta.area.trim(),
     ubicacion: datosOferta.ubicacion.trim(),
     tipo_jornada: datosOferta.jornada,
@@ -59,12 +63,26 @@ function CrearOfertaLaboral() {
 
   function validarOfertaLaboral() {
     const tituloOferta = datosOferta.titulo.trim();
+    const empresaOferta = datosOferta.empresa.trim();
+    const sueldoOferta = datosOferta.sueldo;
     const areaOferta = datosOferta.area.trim();
     const ubicacionOferta = datosOferta.ubicacion.trim();
     const descripcionOferta = datosOferta.descripcion.trim();
 
     if (!tituloOferta) {
       return "Debe ingresar el título de la oferta laboral.";
+    }
+
+    if (!empresaOferta) {
+      return "Debe ingresar la empresa donde se trabajará.";
+    }
+
+    if (!sueldoOferta) {
+      return "Debe ingresar el sueldo de la oferta laboral.";
+    }
+
+    if (Number(sueldoOferta) <= 0) {
+      return "El sueldo debe ser mayor a cero.";
     }
 
     if (!areaOferta) {
@@ -180,39 +198,47 @@ function CrearOfertaLaboral() {
 
           <div className="crear-oferta-fila">
             <div className="crear-oferta-grupo">
-              <label htmlFor="area">Área</label>
+              <label htmlFor="empresa">Empresa donde se trabajará</label>
               <input
                 type="text"
-                id="area"
-                name="area"
-                value={datosOferta.area}
+                id="empresa"
+                name="empresa"
+                value={datosOferta.empresa}
                 onChange={manejarCambioCampo}
-                placeholder="Ejemplo: Logística"
+                placeholder="Ejemplo: SAEP, empresa mandante o centro de trabajo"
+              />
+            </div>
+
+            <div className="crear-oferta-grupo">
+              <label htmlFor="sueldo">Sueldo</label>
+              <input
+                type="number"
+                id="sueldo"
+                name="sueldo"
+                value={datosOferta.sueldo}
+                onChange={manejarCambioCampo}
+                placeholder="Ejemplo: 550000"
+                min="0"
               />
             </div>
           </div>
 
           <div className="crear-oferta-fila">
             <div className="crear-oferta-grupo">
+              <label htmlFor="area">Área</label>
+              <input type="text" id="area" name="area" value={datosOferta.area} onChange={manejarCambioCampo} placeholder="Ejemplo: Logística"/>
+            </div>
+          </div>
+
+          <div className="crear-oferta-fila">
+            <div className="crear-oferta-grupo">
               <label htmlFor="ubicacion">Ubicación</label>
-              <input
-                type="text"
-                id="ubicacion"
-                name="ubicacion"
-                value={datosOferta.ubicacion}
-                onChange={manejarCambioCampo}
-                placeholder="Ejemplo: Santiago"
-              />
+              <input type="text" id="ubicacion" name="ubicacion" value={datosOferta.ubicacion} onChange={manejarCambioCampo} placeholder="Ejemplo: Santiago"/>
             </div>
 
             <div className="crear-oferta-grupo">
               <label htmlFor="jornada">Jornada</label>
-              <select
-                id="jornada"
-                name="jornada"
-                value={datosOferta.jornada}
-                onChange={manejarCambioCampo}
-              >
+              <select id="jornada" name="jornada" value={datosOferta.jornada} onChange={manejarCambioCampo}>
                 <option value="">Seleccione una opción</option>
                 {jornadasDisponibles.map(function mostrarJornada(jornada) {
                   return (

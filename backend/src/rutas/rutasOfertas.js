@@ -35,39 +35,67 @@ const verificarReclutador = async(req, res, next) => {
 };
 
 router.post('/crear', verificarReclutador, async (req, res) => {
-    const { titulo, descripcion, area, ubicacion, tipo_jornada, estado } = req.body || {};
+    const { titulo, descripcion, area, ubicacion, tipo_jornada, estado, empresa, sueldo } = req.body || {};
 
-    if (!titulo || !titulo.trim()) {
-    return res.status(400).json({
-        ok: false,
-        mensaje: 'Debe ingresar el título de la oferta laboral.'
+      if (!titulo || !titulo.trim()) {
+        return res.status(400).json({
+          ok: false,
+          mensaje: 'Debe ingresar el título de la oferta laboral.'
         });
-    }
+      }
+
+      if (!empresa || !empresa.trim()) {
+        return res.status(400).json({
+          ok: false,
+          mensaje: 'Debe ingresar la empresa donde se trabajará.'
+        });
+      }
+
+      if (!sueldo || Number(sueldo) <= 0) {
+        return res.status(400).json({
+          ok: false,
+          mensaje: 'Debe ingresar un sueldo válido para la oferta laboral.'
+        });
+      }
 
     try {
-        const estadoOferta = estado || 'ACTIVA';
-        const [resultado] = await conexion.query(
-            `INSERT INTO ofertas_laborales (id_reclutador, titulo, descripcion, area, ubicacion, tipo_jornada, estado)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [req.id_reclutador, titulo.trim(), descripcion?.trim()|| null, area?.trim()|| null, ubicacion?.trim()|| null, tipo_jornada?.trim()|| null, estadoOferta]
-        );
-        return res.status(201).json({
-            ok: true,
-            mensaje: 'Oferta laboral creada exitosamente.'
-        });
-    } catch (error) {
-        console.error('Error al crear la oferta laboral:', error);
-        return res.status(500).json({
-            ok: false,
-            mensaje: 'Error interno del servidor.'
-        });
-    }
+      const estadoOferta = estado || 'ACTIVA';
+
+      await conexion.query(
+        `INSERT INTO ofertas_laborales ( id_reclutador, titulo, empresa, sueldo, descripcion, area, ubicacion, tipo_jornada, estado)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          req.id_reclutador,
+          titulo.trim(),
+          empresa.trim(),
+          Number(sueldo),
+          descripcion?.trim() || null,
+          area?.trim() || null,
+          ubicacion?.trim() || null,
+          tipo_jornada?.trim() || null,
+          estadoOferta
+      ]
+    );
+
+    return res.status(201).json({
+      ok: true,
+      mensaje: 'Oferta laboral creada exitosamente.'
+    });
+
+  } catch (error) {
+      console.error('Error al crear la oferta laboral:', error);
+
+    return res.status(500).json({
+      ok: false,
+      mensaje: 'Error interno del servidor.'
+    });
+  }
 });
 
 router.get('/listar', async (req, res) => {
   try {
     const [ofertas] = await conexion.query(
-      `SELECT id_oferta, titulo, area, ubicacion, tipo_jornada, descripcion, estado, fecha_publicacion
+      `SELECT id_oferta, titulo, area, ubicacion, tipo_jornada, descripcion, estado, fecha_publicacion, empresa, sueldo
        FROM ofertas_laborales
        WHERE estado = 'ACTIVA'
        ORDER BY fecha_publicacion DESC`
@@ -89,6 +117,8 @@ router.get('/listar', async (req, res) => {
         titulo: oferta.titulo,
         area: oferta.area,
         ubicacion: oferta.ubicacion,
+        empresa: oferta.empresa,
+        sueldo: oferta.sueldo,
         jornada: oferta.tipo_jornada,
         modalidad: modalidad,
         estado: oferta.estado === "ACTIVA" ? "Activa" : "Inactiva",

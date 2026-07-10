@@ -14,6 +14,7 @@ router.post("/registro", async (req, res) => {
     apellido_materno,
     fecha_nacimiento,
     telefono,
+    sexo,
     direccion
   } = req.body;
 
@@ -71,8 +72,8 @@ router.post("/registro", async (req, res) => {
 
     await conexionBaseDatos.query(
       `INSERT INTO postulantes 
-       (id_usuario, rut, nombres, apellido_paterno, apellido_materno, fecha_nacimiento, telefono, direccion)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id_usuario, rut, nombres, apellido_paterno, apellido_materno, fecha_nacimiento, telefono, direccion, sexo)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id_usuario,
         rut,
@@ -81,7 +82,8 @@ router.post("/registro", async (req, res) => {
         apellido_materno || null,
         fecha_nacimiento || null,
         telefono || null,
-        direccion || null
+        direccion || null,
+        sexo || null
       ]
     );
 

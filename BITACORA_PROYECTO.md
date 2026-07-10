@@ -665,3 +665,34 @@ El proyecto quedó respaldado en GitHub con el avance completo de la conexión O
 * Completar pruebas manuales del sistema.
 * Preparar despliegue web.
 * Actualizar documentación final del proyecto.
+
+## AVANCE 18 - 10/07/2026
+
+### Validación OCR de documentos finales
+
+### Actividad realizada
+
+Se completó la lógica de procesamiento OCR para documentos finales del postulante seleccionado.
+
+### Avances técnicos
+
+* Se amplió la tabla `datos_ocr` con nuevos campos de validación.
+* Se agregó detección de fecha de emisión del documento.
+* Se agregó detección de institución de salud, considerando FONASA e ISAPRE.
+* Se agregó detección de AFP en certificados previsionales.
+* Se implementó comparación entre el RUT detectado por OCR y el RUT registrado por el postulante.
+* Se implementó comparación entre el nombre detectado por OCR y el nombre registrado por el postulante.
+* Se agregó observación automática de validación OCR.
+* Se configuró el procesamiento automático de cédula, salud y previsional solo cuando la postulación cambia a estado “Seleccionado”.
+* Se actualizó el detalle de postulación para mostrar la validación OCR al reclutador.
+
+### Resultado obtenido
+
+El sistema permite validar documentos finales mediante OCR solo cuando el postulante es seleccionado, evitando procesamientos innecesarios y entregando al reclutador información relevante para confirmar la identidad y documentación del candidato.
+
+### Pendiente
+
+* Mejorar presentación visual de los resultados OCR.
+* Preparar generación de archivo final del postulante seleccionado.
+* Completar casos de prueba manuales.
+* Preparar despliegue web del sistema.
