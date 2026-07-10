@@ -10,10 +10,14 @@ function PanelReclutador() {
   const [resumen, setResumen] = useState({ofertas_activas: 0, total_postulantes: 0, documentos_cargados: 0, documentos_procesados: 0 });
   const [cargandoPanel, setCargandoPanel] = useState(true);
   const [mensajePanel, setMensajePanel] = useState('');
+  const [coincidenciaMinima, setCoincidenciaMinima] = useState(0);
   
 
   function manejarCambioBusqueda(evento) {
     setBusqueda(evento.target.value);
+  }
+  function manejarCambioCoincidencia(evento) {
+    setCoincidenciaMinima(Number(evento.target.value));
   }
   function manejarSeleccionOferta(idOferta) {
   setOfertaSeleccionada(idOferta);
@@ -51,28 +55,36 @@ function PanelReclutador() {
     return 'Pendiente OCR';
   }
 
-  function coincideConFiltro(postulante) {
-    const textoBusqueda = busqueda.trim().toLowerCase();
+  const postulantesFiltrados = postulantes
+    .filter(function filtrarPostulante(postulante) {
+      const textoBusqueda = busqueda.trim().toLowerCase();
 
-    if (!textoBusqueda) {
-      return true;
-    }
+      const nombre = postulante.nombre?.toLowerCase() || '';
+      const rut = postulante.rut?.toLowerCase() || '';
+      const oferta = postulante.oferta?.toLowerCase() || '';
+      const estado = postulante.estado?.toLowerCase() || '';
+      const palabrasEncontradas = postulante.palabras_encontradas?.join(' ').toLowerCase() || '';
 
-    return (
-      postulante.nombre.toLowerCase().includes(textoBusqueda) ||
-      postulante.rut.toLowerCase().includes(textoBusqueda) ||
-      postulante.oferta.toLowerCase().includes(textoBusqueda) ||
-      postulante.estado.toLowerCase().includes(textoBusqueda)
-    );
-  }
+      const coincideBusqueda =
+        !textoBusqueda ||
+        nombre.includes(textoBusqueda) ||
+        rut.includes(textoBusqueda) ||
+        oferta.includes(textoBusqueda) ||
+        estado.includes(textoBusqueda) ||
+        palabrasEncontradas.includes(textoBusqueda);
 
-  const postulantesFiltrados = postulantes.filter(function filtrarPostulantes(postulante) {
-    const coincideOferta =
-      !ofertaSeleccionada ||
-      Number(postulante.id_oferta) === Number(ofertaSeleccionada);
+      const coincidePorOferta =
+        !ofertaSeleccionada ||
+        String(postulante.id_oferta) === String(ofertaSeleccionada);
 
-    return coincideOferta && coincideConFiltro(postulante);
-  });
+      const coincidePorcentaje =
+        Number(postulante.coincidencia_curriculum || 0) >= coincidenciaMinima;
+
+      return coincideBusqueda && coincidePorOferta && coincidePorcentaje;
+    })
+    .sort(function ordenarPorCoincidencia(a, b) {
+      return Number(b.coincidencia_curriculum || 0) - Number(a.coincidencia_curriculum || 0);
+    });
 
   useEffect(function cargarPanelReclutador() {
   let componenteActivo = true;
@@ -214,6 +226,12 @@ function PanelReclutador() {
             <div className="reclutador-filtros">
               <label htmlFor="busquedaPostulante">Buscar postulante</label>
               <input type="text" id="busquedaPostulante" value={busqueda} onChange={manejarCambioBusqueda} placeholder="Buscar por nombre, RUT, oferta o estado"/>
+              <select value={coincidenciaMinima} onChange={manejarCambioCoincidencia}>
+                <option value={0}>Todas las coincidencias</option>
+                <option value={25}>Desde 25%</option>
+                <option value={50}>Desde 50%</option>
+                <option value={75}>Desde 75%</option>
+              </select>
             </div>
               {ofertaSeleccionada && (
                 <div className="reclutador-filtro-activo">
@@ -239,9 +257,32 @@ function PanelReclutador() {
                       <p>Oferta: {postulante.oferta}</p>
                       <p>{postulante.cantidad_documentos || 0} documentos cargados</p>
                       <p>Estado OCR: {obtenerEstadoOcr(postulante)}</p>
-                      <p>
-                        Coincidencia currículum: {postulante.coincidencia_curriculum || 0}%
-                      </p>
+
+                      <div className="reclutador-coincidencia">
+                        <p>
+                          Coincidencia currículum/oferta:
+                          <strong> {postulante.coincidencia_curriculum || 0}%</strong>
+                        </p>
+
+                        <div className="barra-coincidencia">
+                          <div
+                            className="barra-coincidencia-progreso"
+                            style={{ width: `${postulante.coincidencia_curriculum || 0}%` }}
+                          ></div>
+                        </div>
+
+                        {postulante.palabras_encontradas?.length > 0 && (
+                          <p className="palabras-ocr">
+                            Palabras encontradas: {postulante.palabras_encontradas.join(', ')}
+                          </p>
+                        )}
+
+                        {postulante.palabras_faltantes?.length > 0 && (
+                          <p className="palabras-ocr palabras-faltantes">
+                            Palabras faltantes: {postulante.palabras_faltantes.join(', ')}
+                          </p>
+                        )}
+                      </div>
 
                       {postulante.palabras_encontradas?.length > 0 && (
                         <p>

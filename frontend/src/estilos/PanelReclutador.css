@@ -198,6 +198,43 @@
   line-height: 1.5;
 }
 
+.reclutador-coincidencia {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.reclutador-coincidencia p {
+  margin-bottom: 8px;
+}
+
+.barra-coincidencia {
+  width: 100%;
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.barra-coincidencia-progreso {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 999px;
+}
+
+.palabras-ocr {
+  font-size: 14px;
+  line-height: 1.4;
+  color: #334155;
+}
+
+.palabras-faltantes {
+  color: #7f1d1d;
+}
+
 @media (max-width: 1000px) {
   .panel-reclutador-resumen {
     grid-template-columns: repeat(2, 1fr);
