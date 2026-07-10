@@ -94,6 +94,17 @@ function DetallePostulante() {
 
     return new Date(fecha).toLocaleDateString('es-CL');
   }
+  function obtenerResumenTexto(texto) {
+    if (!texto) {
+      return '';
+    }
+
+    if (texto.length <= 800) {
+      return texto;
+    }
+
+    return `${texto.substring(0, 800)}...`;
+  }
 
   function obtenerClaseEstado(estado) {
     if (!estado) {
@@ -331,6 +342,14 @@ function DetallePostulante() {
                     <p>Nombre detectado: {documento.nombre_detectado || 'Pendiente OCR'}</p>
                     <p>Institución detectada: {documento.institucion_detectada || 'Pendiente OCR'}</p>
                     <p>Confianza OCR: {documento.confianza || 'Pendiente OCR'}</p>
+
+                    {documento.tipo_documento === 'CURRICULUM' && documento.texto_extraido && (
+                      <div className="reclutador-texto-ocr">
+                        <h4>Texto extraído del currículum</h4>
+                        <p>{obtenerResumenTexto(documento.texto_extraido)}</p>
+                      </div>
+                    )}
+                    
                     <a href={`http://localhost:3001/api/reclutador/documento/${documento.id_documento}/ver`} target="_blank" rel="noreferrer" className="boton-principal">
                         Ver documento
                         </a>

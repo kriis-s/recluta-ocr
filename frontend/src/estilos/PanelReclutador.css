@@ -179,6 +179,25 @@
   text-align: center;
 }
 
+.reclutador-texto-ocr {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #f4f7fb;
+  border: 1px solid #dce3ec;
+}
+
+.reclutador-texto-ocr h4 {
+  margin-bottom: 8px;
+  color: #1f3556;
+}
+
+.reclutador-texto-ocr p {
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 @media (max-width: 1000px) {
   .panel-reclutador-resumen {
     grid-template-columns: repeat(2, 1fr);

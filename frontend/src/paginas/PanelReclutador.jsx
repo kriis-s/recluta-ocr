@@ -239,6 +239,15 @@ function PanelReclutador() {
                       <p>Oferta: {postulante.oferta}</p>
                       <p>{postulante.cantidad_documentos || 0} documentos cargados</p>
                       <p>Estado OCR: {obtenerEstadoOcr(postulante)}</p>
+                      <p>
+                        Coincidencia currículum: {postulante.coincidencia_curriculum || 0}%
+                      </p>
+
+                      {postulante.palabras_encontradas?.length > 0 && (
+                        <p>
+                          Palabras encontradas: {postulante.palabras_encontradas.join(', ')}
+                        </p>
+                      )}
 
                       <span className={`reclutador-estado ${obtenerClaseEstado(postulante.estado)}`}>
                         {postulante.estado}

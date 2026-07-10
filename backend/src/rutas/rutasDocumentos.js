@@ -4,10 +4,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const conexion = require('../config/conexion');
+const { procesarDocumentoConOcr } = require('../servicios/servicioOcr');
 
 const router = express.Router();
 
 const carpetaDocumentos = path.join(__dirname, '../../archivos/documentos');
+
 
 if (!fs.existsSync(carpetaDocumentos)) {
   fs.mkdirSync(carpetaDocumentos, { recursive: true });
@@ -97,114 +99,199 @@ const verificarPostulante = async (req, res, next) => {
   }
 };
 
-router.post(
-  '/cargar',
-  verificarPostulante,
-  subirArchivo.single('archivo'),
-  async (req, res) => {
-    const { tipo_documento } = req.body;
+router.post('/cargar', verificarPostulante, subirArchivo.single('archivo'), async (req, res) => {
+  const { tipo_documento } = req.body;
 
-    if (!tipo_documento) {
-      return res.status(400).json({
-        ok: false,
-        mensaje: 'Debe seleccionar el tipo de documento.'
-      });
-    }
+  if (!tipo_documento) {
+    return res.status(400).json({
+      ok: false,
+      mensaje: 'Debe seleccionar el tipo de documento.'
+    });
+  }
 
-    if (!req.file) {
-      return res.status(400).json({
-        ok: false,
-        mensaje: 'Debe adjuntar un archivo.'
-      });
-    }
+  if (!req.file) {
+    return res.status(400).json({
+      ok: false,
+      mensaje: 'Debe adjuntar un archivo.'
+    });
+  }
 
-    const tiposValidos = [
-      'CEDULA',
-      'CURRICULUM',
-      'CERTIFICADO_SALUD',
-      'CERTIFICADO_PREVISIONAL',
-      'OTRO'
-    ];
+  const tiposPermitidos = [
+    'CEDULA',
+    'CURRICULUM',
+    'CERTIFICADO_SALUD',
+    'CERTIFICADO_PREVISIONAL',
+    'OTRO'
+  ];
 
-    if (!tiposValidos.includes(tipo_documento)) {
-      return res.status(400).json({
-        ok: false,
-        mensaje: 'Tipo de documento no válido.'
-      });
-    }
+  if (!tiposPermitidos.includes(tipo_documento)) {
+    return res.status(400).json({
+      ok: false,
+      mensaje: 'El tipo de documento seleccionado no es válido.'
+    });
+  }
 
-    try {
-      const rutaArchivo = `archivos/documentos/${req.file.filename}`;
+  const nombreArchivo = req.file.filename;
+  const rutaArchivo = `archivos/documentos/${nombreArchivo}`;
+  const formato = req.file.mimetype;
 
-      const [documentosExistentes] = await conexion.query(
-        `SELECT id_documento
-         FROM documentos
-         WHERE id_postulante = ? AND tipo_documento = ?`,
-        [req.id_postulante, tipo_documento]
+  try {
+    const [documentosExistentes] = await conexion.query(
+      `SELECT id_documento
+       FROM documentos
+       WHERE id_postulante = ?
+       AND tipo_documento = ?`,
+      [req.id_postulante, tipo_documento]
+    );
+
+    let idDocumento;
+
+    if (documentosExistentes.length > 0) {
+      idDocumento = documentosExistentes[0].id_documento;
+
+      await conexion.query(
+        `UPDATE documentos
+         SET nombre_archivo = ?,
+             ruta_archivo = ?,
+             formato = ?,
+             fecha_carga = CURRENT_TIMESTAMP,
+             estado_procesamiento = 'PENDIENTE'
+         WHERE id_documento = ?`,
+        [
+          nombreArchivo,
+          rutaArchivo,
+          formato,
+          idDocumento
+        ]
       );
 
-      if (documentosExistentes.length > 0) {
-        const id_documento = documentosExistentes[0].id_documento;
+    } else {
+      const [resultado] = await conexion.query(
+        `INSERT INTO documentos (
+          id_postulante,
+          id_postulacion,
+          tipo_documento,
+          nombre_archivo,
+          ruta_archivo,
+          formato,
+          estado_procesamiento
+        )
+        VALUES (?, NULL, ?, ?, ?, ?, 'PENDIENTE')`,
+        [
+          req.id_postulante,
+          tipo_documento,
+          nombreArchivo,
+          rutaArchivo,
+          formato
+        ]
+      );
+
+      idDocumento = resultado.insertId;
+    }
+
+    if (tipo_documento === 'CURRICULUM') {
+      try {
+        const rutaArchivoFisica = path.join(
+          __dirname,
+          '../../',
+          rutaArchivo
+        );
+
+        const resultadoOcr = await procesarDocumentoConOcr(rutaArchivoFisica);
+
+        await conexion.query(
+          `INSERT INTO datos_ocr (
+            id_documento,
+            texto_extraido,
+            rut_detectado,
+            nombre_detectado,
+            fecha_nacimiento_detectada,
+            institucion_detectada,
+            confianza,
+            fecha_procesamiento
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+          ON DUPLICATE KEY UPDATE
+            texto_extraido = VALUES(texto_extraido),
+            rut_detectado = VALUES(rut_detectado),
+            nombre_detectado = VALUES(nombre_detectado),
+            fecha_nacimiento_detectada = VALUES(fecha_nacimiento_detectada),
+            institucion_detectada = VALUES(institucion_detectada),
+            confianza = VALUES(confianza),
+            fecha_procesamiento = NOW()`,
+          [
+            idDocumento,
+            resultadoOcr.texto_extraido,
+            resultadoOcr.rut_detectado,
+            resultadoOcr.nombre_detectado,
+            resultadoOcr.fecha_nacimiento_detectada,
+            resultadoOcr.institucion_detectada,
+            resultadoOcr.confianza
+          ]
+        );
 
         await conexion.query(
           `UPDATE documentos
-           SET nombre_archivo = ?,
-               ruta_archivo = ?,
-               formato = ?,
-               fecha_carga = CURRENT_TIMESTAMP,
-               estado_procesamiento = ?
+           SET estado_procesamiento = 'PROCESADO'
            WHERE id_documento = ?`,
-          [
-            req.file.originalname,
-            rutaArchivo,
-            req.file.mimetype,
-            'PENDIENTE',
-            id_documento
-          ]
+          [idDocumento]
         );
 
         return res.json({
           ok: true,
-          mensaje: 'Documento actualizado correctamente.',
-          id_documento,
-          nombre_archivo: req.file.originalname,
-          estado_procesamiento: 'PENDIENTE'
+          mensaje: 'Currículum cargado y procesado correctamente con OCR.',
+          documento: {
+            id_documento: idDocumento,
+            tipo_documento,
+            nombre_archivo: nombreArchivo,
+            estado_procesamiento: 'PROCESADO'
+          },
+          resultado_ocr: resultadoOcr
+        });
+
+      } catch (errorOcr) {
+        console.error('Error al procesar currículum con OCR:', errorOcr);
+
+        await conexion.query(
+          `UPDATE documentos
+           SET estado_procesamiento = 'ERROR'
+           WHERE id_documento = ?`,
+          [idDocumento]
+        );
+
+        return res.json({
+          ok: true,
+          mensaje: 'El currículum fue cargado, pero ocurrió un error al procesarlo con OCR.',
+          documento: {
+            id_documento: idDocumento,
+            tipo_documento,
+            nombre_archivo: nombreArchivo,
+            estado_procesamiento: 'ERROR'
+          }
         });
       }
-
-      const [resultado] = await conexion.query(
-        `INSERT INTO documentos
-         (id_postulante, id_postulacion, tipo_documento, nombre_archivo, ruta_archivo, formato, estado_procesamiento)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          req.id_postulante,
-          null,
-          tipo_documento,
-          req.file.originalname,
-          rutaArchivo,
-          req.file.mimetype,
-          'PENDIENTE'
-        ]
-      );
-
-      return res.status(201).json({
-        ok: true,
-        mensaje: 'Documento cargado correctamente.',
-        id_documento: resultado.insertId,
-        nombre_archivo: req.file.originalname,
-        estado_procesamiento: 'PENDIENTE'
-      });
-
-    } catch (error) {
-      console.error('Error al cargar documento:', error);
-
-      return res.status(500).json({
-        ok: false,
-        mensaje: 'Error interno al cargar el documento.'
-      });
     }
+
+    return res.json({
+      ok: true,
+      mensaje: 'Documento cargado correctamente. El OCR se procesará solo si el postulante es seleccionado.',
+      documento: {
+        id_documento: idDocumento,
+        tipo_documento,
+        nombre_archivo: nombreArchivo,
+        estado_procesamiento: 'PENDIENTE'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error al cargar documento:', error);
+
+    return res.status(500).json({
+      ok: false,
+      mensaje: 'Error interno al cargar el documento.'
+    });
   }
-);
+});
 
 router.get('/mis-documentos', verificarPostulante, async (req, res) => {
   try {

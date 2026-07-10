@@ -2,8 +2,72 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const conexion = require('../config/conexion');
 const path = require('path');
-
 const router = express.Router();
+
+function normalizarTexto(texto) {
+  if (!texto) {
+    return '';
+  }
+
+  return texto
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9ñ\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function obtenerPalabrasClave(textoOferta) {
+  const palabrasComunes = [
+    'para', 'con', 'por', 'del', 'los', 'las', 'una', 'uno', 'que',
+    'sus', 'sin', 'como', 'esta', 'este', 'desde', 'entre', 'debe',
+    'tener', 'ideal', 'laboral', 'oferta', 'cargo', 'requiere',
+    'descripcion', 'requisitos', 'modalidad', 'jornada', 'tiempo',
+    'completo', 'empresa'
+  ];
+
+  const textoNormalizado = normalizarTexto(textoOferta);
+
+  const palabras = textoNormalizado
+    .split(' ')
+    .filter(function filtrarPalabra(palabra) {
+      return palabra.length >= 4 && !palabrasComunes.includes(palabra);
+    });
+
+  return [...new Set(palabras)].slice(0, 15);
+}
+
+function calcularCoincidenciaCurriculum(textoOferta, textoCurriculum) {
+  const palabrasClave = obtenerPalabrasClave(textoOferta);
+  const curriculumNormalizado = normalizarTexto(textoCurriculum);
+
+  if (palabrasClave.length === 0 || !curriculumNormalizado) {
+    return {
+      porcentaje: 0,
+      encontradas: [],
+      faltantes: palabrasClave
+    };
+  }
+
+  const encontradas = palabrasClave.filter(function buscarPalabra(palabra) {
+    return curriculumNormalizado.includes(palabra);
+  });
+
+  const faltantes = palabrasClave.filter(function buscarFaltante(palabra) {
+    return !curriculumNormalizado.includes(palabra);
+  });
+
+  const porcentaje = Math.round((encontradas.length / palabrasClave.length) * 100);
+
+  return {
+    porcentaje,
+    encontradas,
+    faltantes
+  };
+}
+
 
 const verificarReclutador = async (req, res, next) => {
   const token = req.cookies.token_recluta_ocr;
@@ -96,16 +160,19 @@ router.get('/panel', verificarReclutador, async (req, res) => {
         CONCAT_WS(' ', p.nombres, p.apellido_paterno, p.apellido_materno) AS nombre,
         p.rut,
         o.titulo AS oferta,
+        o.descripcion AS descripcion_oferta,
         COALESCE(e.nombre_estado, 'Recibida') AS estado,
         COUNT(DISTINCT d.id_documento) AS cantidad_documentos,
         COUNT(DISTINCT CASE 
           WHEN d.estado_procesamiento = 'PROCESADO' THEN d.id_documento 
-        END) AS documentos_procesados
+        END) AS documentos_procesados,
+        MAX(ocr_cv.texto_extraido) AS texto_curriculum
        FROM postulaciones po
        INNER JOIN postulantes p ON p.id_postulante = po.id_postulante
        INNER JOIN ofertas_laborales o ON o.id_oferta = po.id_oferta
        LEFT JOIN estados_postulacion e ON e.id_estado = po.id_estado
        LEFT JOIN documentos d ON d.id_postulante = p.id_postulante
+       LEFT JOIN documentos dcv ON dcv.id_postulante = p.id_postulante AND dcv.tipo_documento = 'CURRICULUM' LEFT JOIN datos_ocr ocr_cv ON ocr_cv.id_documento = dcv.id_documento
        WHERE o.id_reclutador = ?
        GROUP BY
         po.id_postulacion,
@@ -116,16 +183,33 @@ router.get('/panel', verificarReclutador, async (req, res) => {
         p.apellido_materno,
         p.rut,
         o.titulo,
+        o.descripcion,
         e.nombre_estado
        ORDER BY po.fecha_postulacion DESC`,
       [req.id_reclutador]
     );
 
+    const postulantesConCoincidencia = postulantes.map(function agregarCoincidencia(postulante) {
+      const textoOferta = `${postulante.oferta || ''} ${postulante.descripcion_oferta || ''}`;
+
+      const coincidencia = calcularCoincidenciaCurriculum(
+        textoOferta,
+        postulante.texto_curriculum
+      );
+
+      return {
+        ...postulante,
+        coincidencia_curriculum: coincidencia.porcentaje,
+        palabras_encontradas: coincidencia.encontradas,
+        palabras_faltantes: coincidencia.faltantes
+      };
+    });
+
     return res.json({
       ok: true,
       resumen: resumen[0],
       ofertas,
-      postulantes
+      postulantes: postulantesConCoincidencia
     });
 
   } catch (error) {
@@ -187,6 +271,7 @@ router.get('/postulacion/:id_postulacion', verificarReclutador, async (req, res)
         d.fecha_carga,
         d.estado_procesamiento,
         ocr.id_ocr,
+        ocr.texto_extraido,
         ocr.rut_detectado,
         ocr.nombre_detectado,
         ocr.fecha_nacimiento_detectada,
