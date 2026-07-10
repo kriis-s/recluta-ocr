@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const conexion = require('../config/conexion');
 const path = require('path');
+const { procesarDocumentoConOcr } = require('../servicios/servicioOcr');
 const router = express.Router();
 
 function normalizarTexto(texto) {
@@ -68,6 +69,113 @@ function calcularCoincidenciaCurriculum(textoOferta, textoCurriculum) {
   };
 }
 
+async function procesarDocumentosFinalesPostulante(datosPostulante) {
+  const [documentos] = await conexion.query(
+    `SELECT
+      id_documento,
+      tipo_documento,
+      nombre_archivo,
+      ruta_archivo,
+      estado_procesamiento
+     FROM documentos
+     WHERE id_postulante = ?
+     AND tipo_documento IN ('CEDULA', 'CERTIFICADO_SALUD', 'CERTIFICADO_PREVISIONAL')
+     AND estado_procesamiento <> 'PROCESADO'`,
+    [datosPostulante.id_postulante]
+  );
+
+  let procesados = 0;
+  let errores = 0;
+
+  for (const documento of documentos) {
+    try {
+      const rutaArchivoFisica = path.join(
+        __dirname,
+        '../../',
+        documento.ruta_archivo
+      );
+
+      const resultadoOcr = await procesarDocumentoConOcr(
+        rutaArchivoFisica,
+        datosPostulante,
+        documento.tipo_documento
+      );
+
+      await conexion.query(
+        `INSERT INTO datos_ocr (
+          id_documento,
+          texto_extraido,
+          rut_detectado,
+          nombre_detectado,
+          fecha_nacimiento_detectada,
+          fecha_emision_detectada,
+          institucion_detectada,
+          tipo_institucion,
+          confianza,
+          coincide_rut,
+          coincide_nombre,
+          observacion_validacion,
+          fecha_procesamiento
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ON DUPLICATE KEY UPDATE
+          texto_extraido = VALUES(texto_extraido),
+          rut_detectado = VALUES(rut_detectado),
+          nombre_detectado = VALUES(nombre_detectado),
+          fecha_nacimiento_detectada = VALUES(fecha_nacimiento_detectada),
+          fecha_emision_detectada = VALUES(fecha_emision_detectada),
+          institucion_detectada = VALUES(institucion_detectada),
+          tipo_institucion = VALUES(tipo_institucion),
+          confianza = VALUES(confianza),
+          coincide_rut = VALUES(coincide_rut),
+          coincide_nombre = VALUES(coincide_nombre),
+          observacion_validacion = VALUES(observacion_validacion),
+          fecha_procesamiento = NOW()`,
+        [
+          documento.id_documento,
+          resultadoOcr.texto_extraido,
+          resultadoOcr.rut_detectado,
+          resultadoOcr.nombre_detectado,
+          resultadoOcr.fecha_nacimiento_detectada,
+          resultadoOcr.fecha_emision_detectada,
+          resultadoOcr.institucion_detectada,
+          resultadoOcr.tipo_institucion,
+          resultadoOcr.confianza,
+          resultadoOcr.coincide_rut ? 1 : 0,
+          resultadoOcr.coincide_nombre ? 1 : 0,
+          resultadoOcr.observacion_validacion
+        ]
+      );
+
+      await conexion.query(
+        `UPDATE documentos
+         SET estado_procesamiento = 'PROCESADO'
+         WHERE id_documento = ?`,
+        [documento.id_documento]
+      );
+
+      procesados++;
+
+    } catch (error) {
+      console.error('Error al procesar documento final con OCR:', error);
+
+      await conexion.query(
+        `UPDATE documentos
+         SET estado_procesamiento = 'ERROR'
+         WHERE id_documento = ?`,
+        [documento.id_documento]
+      );
+
+      errores++;
+    }
+  }
+
+  return {
+    total_documentos: documentos.length,
+    procesados,
+    errores
+  };
+}
 
 const verificarReclutador = async (req, res, next) => {
   const token = req.cookies.token_recluta_ocr;
@@ -221,6 +329,7 @@ router.get('/panel', verificarReclutador, async (req, res) => {
     });
   }
 });
+
 router.get('/postulacion/:id_postulacion', verificarReclutador, async (req, res) => {
   const { id_postulacion } = req.params;
 
@@ -250,16 +359,19 @@ router.get('/postulacion/:id_postulacion', verificarReclutador, async (req, res)
       INNER JOIN usuarios u ON p.id_usuario = u.id_usuario
       INNER JOIN ofertas_laborales o ON po.id_oferta = o.id_oferta
       INNER JOIN estados_postulacion ep ON po.id_estado = ep.id_estado
-      WHERE po.id_postulacion = ?`,
-      [id_postulacion]
+      WHERE po.id_postulacion = ?
+      AND o.id_reclutador = ?`,
+      [id_postulacion, req.id_reclutador]
     );
 
     if (postulaciones.length === 0) {
       return res.status(404).json({
         ok: false,
-        mensaje: 'No se encontró la postulación solicitada.'
+        mensaje: 'No se encontró la postulación solicitada o no tiene permisos para revisarla.'
       });
     }
+
+    const postulacion = postulaciones[0];
 
     const [documentos] = await conexion.query(
       `SELECT
@@ -275,23 +387,30 @@ router.get('/postulacion/:id_postulacion', verificarReclutador, async (req, res)
         ocr.rut_detectado,
         ocr.nombre_detectado,
         ocr.fecha_nacimiento_detectada,
+        ocr.fecha_emision_detectada,
         ocr.institucion_detectada,
+        ocr.tipo_institucion,
         ocr.confianza,
+        ocr.coincide_rut,
+        ocr.coincide_nombre,
+        ocr.observacion_validacion,
         ocr.fecha_procesamiento
       FROM documentos d
-      LEFT JOIN datos_ocr ocr ON d.id_documento = ocr.id_documento
+      LEFT JOIN datos_ocr ocr ON ocr.id_documento = d.id_documento
       WHERE d.id_postulante = ?
       ORDER BY d.fecha_carga DESC`,
-      [postulaciones[0].id_postulante]
+      [postulacion.id_postulante]
     );
+
     const [estados] = await conexion.query(
       `SELECT id_estado, nombre_estado
-      FROM estados_postulacion
-      ORDER BY id_estado ASC`
+       FROM estados_postulacion
+       ORDER BY id_estado ASC`
     );
+
     return res.json({
       ok: true,
-      postulacion: postulaciones[0],
+      postulacion,
       documentos,
       estados
     });
@@ -302,75 +421,6 @@ router.get('/postulacion/:id_postulacion', verificarReclutador, async (req, res)
     return res.status(500).json({
       ok: false,
       mensaje: 'Error interno al obtener el detalle de la postulación.'
-    });
-  }
-});
-router.put('/postulacion/:id_postulacion/estado', verificarReclutador, async (req, res) => {
-  const { id_postulacion } = req.params;
-  const { id_estado, observacion } = req.body || {};
-
-  if (!id_estado) {
-    return res.status(400).json({
-      ok: false,
-      mensaje: 'Debe seleccionar un estado para la postulación.'
-    });
-  }
-
-  try {
-    const [estados] = await conexion.query(
-      `SELECT id_estado, nombre_estado
-       FROM estados_postulacion
-       WHERE id_estado = ?`,
-      [id_estado]
-    );
-
-    if (estados.length === 0) {
-      return res.status(404).json({
-        ok: false,
-        mensaje: 'El estado seleccionado no existe.'
-      });
-    }
-
-    const [postulaciones] = await conexion.query(
-      `SELECT po.id_postulacion
-       FROM postulaciones po
-       INNER JOIN ofertas_laborales o ON po.id_oferta = o.id_oferta
-       WHERE po.id_postulacion = ?
-       AND o.id_reclutador = ?`,
-      [id_postulacion, req.id_reclutador]
-    );
-
-    if (postulaciones.length === 0) {
-      return res.status(403).json({
-        ok: false,
-        mensaje: 'No tiene permisos para modificar esta postulación.'
-      });
-    }
-
-    await conexion.query(
-      `UPDATE postulaciones
-       SET id_estado = ?,
-           observacion = ?
-       WHERE id_postulacion = ?`,
-      [
-        id_estado,
-        observacion?.trim() || null,
-        id_postulacion
-      ]
-    );
-
-    return res.json({
-      ok: true,
-      mensaje: 'Estado de postulación actualizado correctamente.',
-      estado: estados[0].nombre_estado
-    });
-
-  } catch (error) {
-    console.error('Error al cambiar estado de postulación:', error);
-
-    return res.status(500).json({
-      ok: false,
-      mensaje: 'Error interno al cambiar el estado de la postulación.'
     });
   }
 });
@@ -418,6 +468,92 @@ router.get('/documento/:id_documento/ver', verificarReclutador, async (req, res)
     return res.status(500).json({
       ok: false,
       mensaje: 'Error interno al visualizar el documento.'
+    });
+  }
+});
+
+router.put('/postulacion/:id_postulacion/estado', verificarReclutador, async (req, res) => {
+  const { id_postulacion } = req.params;
+  const { id_estado, observacion } = req.body || {};
+
+  if (!id_estado) {
+    return res.status(400).json({
+      ok: false,
+      mensaje: 'Debe seleccionar un estado para la postulación.'
+    });
+  }
+
+  try {
+    const [estados] = await conexion.query(
+      `SELECT id_estado, nombre_estado
+       FROM estados_postulacion
+       WHERE id_estado = ?`,
+      [id_estado]
+    );
+
+    if (estados.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: 'El estado seleccionado no existe.'
+      });
+    }
+
+    const [postulaciones] = await conexion.query(
+      `SELECT
+        po.id_postulacion,
+        p.id_postulante,
+        p.rut,
+        p.nombres,
+        p.apellido_paterno,
+        p.apellido_materno
+       FROM postulaciones po
+       INNER JOIN postulantes p ON po.id_postulante = p.id_postulante
+       INNER JOIN ofertas_laborales o ON po.id_oferta = o.id_oferta
+       WHERE po.id_postulacion = ?
+       AND o.id_reclutador = ?`,
+      [id_postulacion, req.id_reclutador]
+    );
+
+    if (postulaciones.length === 0) {
+      return res.status(403).json({
+        ok: false,
+        mensaje: 'No tiene permisos para modificar esta postulación.'
+      });
+    }
+
+    const postulacion = postulaciones[0];
+
+    await conexion.query(
+      `UPDATE postulaciones
+       SET id_estado = ?,
+           observacion = ?
+       WHERE id_postulacion = ?`,
+      [
+        id_estado,
+        observacion?.trim() || null,
+        id_postulacion
+      ]
+    );
+
+    let resultadoProcesamientoFinal = null;
+
+    if (estados[0].nombre_estado === 'Seleccionado') {
+      resultadoProcesamientoFinal = await procesarDocumentosFinalesPostulante(postulacion);
+    }
+
+    return res.json({
+      ok: true,
+      mensaje: 'Estado de postulación actualizado correctamente.',
+      estado: estados[0].nombre_estado,
+      procesamiento_final: resultadoProcesamientoFinal
+    });
+
+  } catch (error) {
+    console.error('Error al cambiar estado de postulación:', error);
+
+    return res.status(500).json({
+      ok: false,
+      mensaje: 'Error interno al cambiar el estado de la postulación.'
     });
   }
 });

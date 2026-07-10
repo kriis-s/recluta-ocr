@@ -12,6 +12,7 @@ function PanelReclutador() {
   const [mensajePanel, setMensajePanel] = useState('');
   const [coincidenciaMinima, setCoincidenciaMinima] = useState(0);
   
+  
 
   function manejarCambioBusqueda(evento) {
     setBusqueda(evento.target.value);

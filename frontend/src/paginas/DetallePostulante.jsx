@@ -129,6 +129,14 @@ function DetallePostulante() {
     setObservacionEstado(evento.target.value);
   }
 
+  function mostrarCoincidencia(valor) {
+    if (Number(valor) === 1) {
+      return 'Sí coincide';
+    }
+
+    return 'No confirmado';
+  }
+
   async function guardarCambioEstado() {
     if (!idEstadoSeleccionado) {
       setMensajeEstado('Debe seleccionar un estado.');
@@ -174,9 +182,21 @@ function DetallePostulante() {
         };
       });
 
-      setMensajeEstado('Estado actualizado correctamente.');
+      if (datosRespuesta.procesamiento_final) {
+        setMensajeEstado(
+          `Estado actualizado correctamente. OCR final procesado: ${datosRespuesta.procesamiento_final.procesados} documento(s), errores: ${datosRespuesta.procesamiento_final.errores}.`
+        );
+      } else {
+        setMensajeEstado('Estado actualizado correctamente.');
+      }
+
       setTipoMensajeEstado('exito');
 
+      if (datosRespuesta.estado === 'Seleccionado') {
+        setTimeout(function recargarDetalle() {
+          window.location.reload();
+        }, 1200);
+      }
     } catch (error) {
       console.error('Error al cambiar estado:', error);
       setMensajeEstado('Error de conexión con el servidor.');
@@ -337,11 +357,23 @@ function DetallePostulante() {
                     <p>Archivo: {documento.nombre_archivo}</p>
                     <p>Formato: {documento.formato || 'No registrado'}</p>
                     <p>Estado procesamiento: {documento.estado_procesamiento}</p>
-
                     <p>RUT detectado: {documento.rut_detectado || 'Pendiente OCR'}</p>
                     <p>Nombre detectado: {documento.nombre_detectado || 'Pendiente OCR'}</p>
                     <p>Institución detectada: {documento.institucion_detectada || 'Pendiente OCR'}</p>
+                    <p>Tipo institución: {documento.tipo_institucion || 'Pendiente OCR'}</p>
+                    <p>Fecha emisión detectada: {documento.fecha_emision_detectada || 'Pendiente OCR'}</p>
                     <p>Confianza OCR: {documento.confianza || 'Pendiente OCR'}</p>
+
+                    {documento.id_ocr && (
+                      <div className="reclutador-validacion-ocr">
+                        <h4>Validación OCR</h4>
+                        <p>Coincidencia RUT: {mostrarCoincidencia(documento.coincide_rut)}</p>
+                        <p>Coincidencia nombre: {mostrarCoincidencia(documento.coincide_nombre)}</p>
+                        <p>
+                          Observación: {documento.observacion_validacion || 'Sin observación registrada.'}
+                        </p>
+                      </div>
+                    )}
 
                     {documento.tipo_documento === 'CURRICULUM' && documento.texto_extraido && (
                       <div className="reclutador-texto-ocr">
@@ -349,7 +381,7 @@ function DetallePostulante() {
                         <p>{obtenerResumenTexto(documento.texto_extraido)}</p>
                       </div>
                     )}
-                    
+
                     <a href={`http://localhost:3001/api/reclutador/documento/${documento.id_documento}/ver`} target="_blank" rel="noreferrer" className="boton-principal">
                         Ver documento
                         </a>

@@ -200,7 +200,7 @@ function PanelPostulante() {
         return;
       }
 
-      setMensaje('Documento cargado correctamente. Quedó pendiente de procesamiento OCR.');
+      setMensaje('Documento cargado correctamente.');
       setTipoMensaje('exito');
 
       await cargarDocumentosPostulante(true);

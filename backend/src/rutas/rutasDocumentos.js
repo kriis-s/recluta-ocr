@@ -191,13 +191,32 @@ router.post('/cargar', verificarPostulante, subirArchivo.single('archivo'), asyn
 
     if (tipo_documento === 'CURRICULUM') {
       try {
+        const [postulantes] = await conexion.query(
+          `SELECT
+            id_postulante,
+            rut,
+            nombres,
+            apellido_paterno,
+            apellido_materno
+          FROM postulantes
+          WHERE id_postulante = ?
+          LIMIT 1`,
+          [req.id_postulante]
+        );
+
+        const datosPostulante = postulantes[0];
+
         const rutaArchivoFisica = path.join(
           __dirname,
           '../../',
           rutaArchivo
         );
 
-        const resultadoOcr = await procesarDocumentoConOcr(rutaArchivoFisica);
+        const resultadoOcr = await procesarDocumentoConOcr(
+          rutaArchivoFisica,
+          datosPostulante,
+          tipo_documento
+        );
 
         await conexion.query(
           `INSERT INTO datos_ocr (
@@ -206,18 +225,28 @@ router.post('/cargar', verificarPostulante, subirArchivo.single('archivo'), asyn
             rut_detectado,
             nombre_detectado,
             fecha_nacimiento_detectada,
+            fecha_emision_detectada,
             institucion_detectada,
+            tipo_institucion,
             confianza,
+            coincide_rut,
+            coincide_nombre,
+            observacion_validacion,
             fecha_procesamiento
           )
-          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
           ON DUPLICATE KEY UPDATE
             texto_extraido = VALUES(texto_extraido),
             rut_detectado = VALUES(rut_detectado),
             nombre_detectado = VALUES(nombre_detectado),
             fecha_nacimiento_detectada = VALUES(fecha_nacimiento_detectada),
+            fecha_emision_detectada = VALUES(fecha_emision_detectada),
             institucion_detectada = VALUES(institucion_detectada),
+            tipo_institucion = VALUES(tipo_institucion),
             confianza = VALUES(confianza),
+            coincide_rut = VALUES(coincide_rut),
+            coincide_nombre = VALUES(coincide_nombre),
+            observacion_validacion = VALUES(observacion_validacion),
             fecha_procesamiento = NOW()`,
           [
             idDocumento,
@@ -225,21 +254,26 @@ router.post('/cargar', verificarPostulante, subirArchivo.single('archivo'), asyn
             resultadoOcr.rut_detectado,
             resultadoOcr.nombre_detectado,
             resultadoOcr.fecha_nacimiento_detectada,
+            resultadoOcr.fecha_emision_detectada,
             resultadoOcr.institucion_detectada,
-            resultadoOcr.confianza
+            resultadoOcr.tipo_institucion,
+            resultadoOcr.confianza,
+            resultadoOcr.coincide_rut ? 1 : 0,
+            resultadoOcr.coincide_nombre ? 1 : 0,
+            resultadoOcr.observacion_validacion
           ]
         );
 
         await conexion.query(
           `UPDATE documentos
-           SET estado_procesamiento = 'PROCESADO'
-           WHERE id_documento = ?`,
+          SET estado_procesamiento = 'PROCESADO'
+          WHERE id_documento = ?`,
           [idDocumento]
         );
 
         return res.json({
           ok: true,
-          mensaje: 'Currículum cargado y procesado correctamente con OCR.',
+          mensaje: 'Currículum cargado, procesado y validado correctamente con OCR.',
           documento: {
             id_documento: idDocumento,
             tipo_documento,
@@ -254,8 +288,8 @@ router.post('/cargar', verificarPostulante, subirArchivo.single('archivo'), asyn
 
         await conexion.query(
           `UPDATE documentos
-           SET estado_procesamiento = 'ERROR'
-           WHERE id_documento = ?`,
+          SET estado_procesamiento = 'ERROR'
+          WHERE id_documento = ?`,
           [idDocumento]
         );
 
