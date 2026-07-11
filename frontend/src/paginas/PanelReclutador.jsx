@@ -11,7 +11,8 @@ function PanelReclutador() {
   const [cargandoPanel, setCargandoPanel] = useState(true);
   const [mensajePanel, setMensajePanel] = useState('');
   const [coincidenciaMinima, setCoincidenciaMinima] = useState(0);
-  
+  const [postulacionesSeleccionadas, setPostulacionesSeleccionadas] = useState([]);
+  const [mensajeExcel, setMensajeExcel] = useState('');
   
 
   function manejarCambioBusqueda(evento) {
@@ -20,6 +21,75 @@ function PanelReclutador() {
   function manejarCambioCoincidencia(evento) {
     setCoincidenciaMinima(Number(evento.target.value));
   }
+
+  function manejarSeleccionPostulacion(idPostulacion) {
+    setMensajeExcel('');
+
+    setPostulacionesSeleccionadas(function actualizarSeleccion(seleccionActual) {
+      const yaExiste = seleccionActual.includes(idPostulacion);
+
+      if (yaExiste) {
+        return seleccionActual.filter(function quitarPostulacion(id) {
+          return id !== idPostulacion;
+        });
+      }
+
+      if (seleccionActual.length >= 10) {
+        setMensajeExcel('Solo puede seleccionar un máximo de 10 postulantes.');
+        return seleccionActual;
+      }
+
+      return [...seleccionActual, idPostulacion];
+    });
+  }
+
+    async function exportarExcelFinal() {
+    if (postulacionesSeleccionadas.length === 0) {
+      setMensajeExcel('Debe seleccionar al menos un postulante.');
+      return;
+    }
+
+    try {
+      setMensajeExcel('');
+
+      const respuesta = await fetch('http://localhost:3001/api/reclutador/exportar-excel-final', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          id_postulaciones: postulacionesSeleccionadas
+        })
+      });
+
+      if (!respuesta.ok) {
+        const error = await respuesta.json();
+        setMensajeExcel(error.mensaje || 'No fue posible exportar el Excel final.');
+        return;
+      }
+
+      const archivo = await respuesta.blob();
+      const urlArchivo = window.URL.createObjectURL(archivo);
+
+      const enlace = document.createElement('a');
+      enlace.href = urlArchivo;
+      enlace.download = 'archivo_final_postulantes.xlsx';
+      document.body.appendChild(enlace);
+      enlace.click();
+
+      enlace.remove();
+      window.URL.revokeObjectURL(urlArchivo);
+
+      setMensajeExcel('Excel final generado correctamente.');
+      setPostulacionesSeleccionadas([]);
+
+    } catch (error) {
+      console.error('Error al exportar Excel final:', error);
+      setMensajeExcel('Error de conexión al exportar el Excel final.');
+    }
+  }
+
   function manejarSeleccionOferta(idOferta) {
   setOfertaSeleccionada(idOferta);
   setBusqueda('');
@@ -223,6 +293,26 @@ function PanelReclutador() {
 
           <div className="reclutador-tarjeta">
             <h2>Postulantes recientes</h2>
+            <div className="reclutador-exportar-excel">
+              <p>
+                Seleccione hasta 10 postulantes en estado Seleccionado para generar el Excel final.
+              </p>
+
+              <button
+                type="button"
+                className="boton-principal"
+                onClick={exportarExcelFinal}
+                disabled={postulacionesSeleccionadas.length === 0}
+              >
+                Exportar Excel final ({postulacionesSeleccionadas.length}/10)
+              </button>
+
+              {mensajeExcel && (
+                <div className="panel-mensaje">
+                  {mensajeExcel}
+                </div>
+              )}
+            </div>
 
             <div className="reclutador-filtros">
               <label htmlFor="busquedaPostulante">Buscar postulante</label>
@@ -253,6 +343,17 @@ function PanelReclutador() {
                 postulantesFiltrados.map(function mostrarPostulante(postulante) {
                   return (
                     <article className="reclutador-postulante" key={postulante.id_postulacion}>
+                      {postulante.estado === 'Seleccionado' && (
+                        <label className="reclutador-seleccion-excel">
+                          <input
+                            type="checkbox"
+                            checked={postulacionesSeleccionadas.includes(postulante.id_postulacion)}
+                            onChange={() => manejarSeleccionPostulacion(postulante.id_postulacion)}
+                          />
+                          Seleccionar para Excel final
+                        </label>
+                      )}
+
                       <h3>{postulante.nombre}</h3>
                       <p>RUT: {postulante.rut}</p>
                       <p>Oferta: {postulante.oferta}</p>

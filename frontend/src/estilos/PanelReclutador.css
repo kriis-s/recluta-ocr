@@ -253,6 +253,35 @@
   line-height: 1.5;
 }
 
+.reclutador-exportar-excel {
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #dbe3ef;
+}
+
+.reclutador-exportar-excel p {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #334155;
+}
+
+.reclutador-seleccion-excel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f3556;
+}
+
+.reclutador-seleccion-excel input {
+  width: 16px;
+  height: 16px;
+}
+
 @media (max-width: 1000px) {
   .panel-reclutador-resumen {
     grid-template-columns: repeat(2, 1fr);
