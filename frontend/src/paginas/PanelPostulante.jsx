@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import '../estilos/PanelPostulante.css';
+import API_URL from '../config/api';
 
 function PanelPostulante() {
   const [tipoDocumento, setTipoDocumento] = useState('');
@@ -24,7 +25,7 @@ function PanelPostulante() {
       }
 
       const respuesta = await fetch(
-        'http://localhost:3001/api/documentos/mis-documentos',
+        `${API_URL}/api/documentos/mis-documentos`,
         {
           method: 'GET',
           credentials: 'include'
@@ -58,7 +59,7 @@ function PanelPostulante() {
       setMensajePanel('');
 
       const respuesta = await fetch(
-        'http://localhost:3001/api/postulaciones/mis-postulaciones',
+        `${API_URL}/api/postulaciones/mis-postulaciones`,
         {
           method: 'GET',
           credentials: 'include'
@@ -89,7 +90,7 @@ function PanelPostulante() {
   async function obtenerDocumentosIniciales() {
     try {
       const respuesta = await fetch(
-        'http://localhost:3001/api/documentos/mis-documentos',
+        `${API_URL}/api/documentos/mis-documentos`,
         {
           method: 'GET',
           credentials: 'include'
@@ -186,7 +187,7 @@ function PanelPostulante() {
       datosFormulario.append('tipo_documento', tipoDocumento);
       datosFormulario.append('archivo', archivo);
 
-      const respuesta = await fetch('http://localhost:3001/api/documentos/cargar', {
+      const respuesta = await fetch(`${API_URL}/api/documentos/cargar`, {
         method: 'POST',
         credentials: 'include',
         body: datosFormulario

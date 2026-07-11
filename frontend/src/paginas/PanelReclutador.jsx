@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../estilos/PanelReclutador.css';
+import API_URL from '../config/api';
 
 function PanelReclutador() {
   const [busqueda, setBusqueda] = useState('');
@@ -52,7 +53,7 @@ function PanelReclutador() {
     try {
       setMensajeExcel('');
 
-      const respuesta = await fetch('http://localhost:3001/api/reclutador/exportar-excel-final', {
+      const respuesta = await fetch(`${API_URL}/api/reclutador/exportar-excel-final`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -163,7 +164,7 @@ function PanelReclutador() {
   async function obtenerPanelReclutador() {
       try {
         const respuesta = await fetch(
-          'http://localhost:3001/api/reclutador/panel',
+          `${API_URL}/api/reclutador/panel`,
           {
             method: 'GET',
             credentials: 'include'

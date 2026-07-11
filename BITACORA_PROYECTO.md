@@ -696,3 +696,49 @@ El sistema permite validar documentos finales mediante OCR solo cuando el postul
 * Preparar generación de archivo final del postulante seleccionado.
 * Completar casos de prueba manuales.
 * Preparar despliegue web del sistema.
+
+## AVANCE 20 - 10/07/2026
+
+### Prueba de exportación Excel final con postulantes demo
+
+### Actividad realizada
+
+Se crearon postulantes ficticios directamente en la base de datos con el objetivo de realizar pruebas y demostraciones sin exponer datos personales reales.
+
+### Avances técnicos
+
+* Se crearon 5 postulantes demo con datos ficticios.
+* Se asociaron los postulantes a una oferta laboral existente.
+* Se dejaron las postulaciones en estado “Seleccionado”.
+* Se crearon documentos simulados para currículum, salud y previsional.
+* Se insertaron datos OCR simulados en la tabla `datos_ocr`.
+* Se cargaron instituciones de salud ficticias, incluyendo FONASA e ISAPRE.
+* Se cargaron AFP ficticias para certificados previsionales.
+* Se validó que los datos OCR simulados fueran utilizados correctamente por el sistema.
+* Se probó la selección múltiple de postulantes desde el panel reclutador.
+* Se validó la exportación del Excel final con los campos requeridos:
+  * RUT.
+  * Nombre completo.
+  * Fecha de nacimiento.
+  * Sexo.
+  * Dirección.
+  * Cargo.
+  * Empresa.
+  * Sueldo.
+  * AFP.
+  * Salud.
+
+### Resultado obtenido
+
+La exportación del Excel final funciona correctamente. El reclutador puede seleccionar hasta 10 postulantes en estado “Seleccionado” y generar un archivo Excel con los datos consolidados de cada postulante.
+
+### Justificación
+
+Se utilizaron datos ficticios para proteger información personal real durante las pruebas y la futura presentación del proyecto.
+
+### Pendiente
+
+* Ajustar detalles visuales menores.
+* Completar casos de prueba manuales.
+* Revisar documentación final.
+* Preparar despliegue web del sistema.

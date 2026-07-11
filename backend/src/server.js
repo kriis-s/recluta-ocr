@@ -3,19 +3,32 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
-const rutasPostulantes = require("./rutas/rutasPostulantes");
-const rutasAutenticacion = require("./rutas/rutasAutenticacion");
-const rutasOfertas = require("./rutas/rutasOfertas");
-const rutasPostulaciones = require("./rutas/rutasPostulaciones");
-const rutasDocumentos = require("./rutas/rutasDocumentos");
+const rutasPostulantes = require('./rutas/rutasPostulantes');
+const rutasAutenticacion = require('./rutas/rutasAutenticacion');
+const rutasOfertas = require('./rutas/rutasOfertas');
+const rutasPostulaciones = require('./rutas/rutasPostulaciones');
+const rutasDocumentos = require('./rutas/rutasDocumentos');
 const rutasPanelReclutador = require('./rutas/rutasPanelReclutador');
 
 const conexion = require('./config/conexion');
 
 const app = express();
 
+app.set('trust proxy', 1);
+
+const origenesPermitidos = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: function validarOrigen(origen, callback) {
+    if (!origen || origenesPermitidos.includes(origen)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Origen no permitido por CORS.'));
+  },
   credentials: true
 }));
 
@@ -74,14 +87,15 @@ app.get('/api/tablas', async (req, res) => {
   }
 });
 
+app.use('/api/postulantes', rutasPostulantes);
+app.use('/api/autenticacion', rutasAutenticacion);
+app.use('/api/ofertas', rutasOfertas);
+app.use('/api/postulaciones', rutasPostulaciones);
+app.use('/api/documentos', rutasDocumentos);
+app.use('/api/reclutador', rutasPanelReclutador);
+
 const PORT = process.env.PORT || 3001;
 
-app.use("/api/postulantes", rutasPostulantes);
-app.use("/api/autenticacion", rutasAutenticacion);
-app.use("/api/ofertas", rutasOfertas);
-app.use("/api/postulaciones", rutasPostulaciones);
-app.use("/api/documentos", rutasDocumentos);
-app.use("/api/reclutador", rutasPanelReclutador);
 app.listen(PORT, () => {
-  console.log(`Servidor backend ejecutándose en http://localhost:${PORT}`);
+  console.log(`Servidor backend ejecutándose en puerto ${PORT}`);
 });

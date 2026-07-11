@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import '../estilos/PanelReclutador.css';
+import API_URL from '../config/api';
 
 function DetallePostulante() {
   const { id_postulacion } = useParams();
@@ -23,7 +24,7 @@ function DetallePostulante() {
     async function obtenerDetallePostulacion() {
       try {
         const respuesta = await fetch(
-          `http://localhost:3001/api/reclutador/postulacion/${id_postulacion}`,
+          `${API_URL}/api/reclutador/postulacion/${id_postulacion}`,
           {
             method: 'GET',
             credentials: 'include'
@@ -150,7 +151,7 @@ function DetallePostulante() {
       setTipoMensajeEstado('');
 
       const respuesta = await fetch(
-        `http://localhost:3001/api/reclutador/postulacion/${id_postulacion}/estado`,
+        `${API_URL}/api/reclutador/postulacion/${id_postulacion}/estado`,
         {
           method: 'PUT',
           headers: {
@@ -382,7 +383,7 @@ function DetallePostulante() {
                       </div>
                     )}
 
-                    <a href={`http://localhost:3001/api/reclutador/documento/${documento.id_documento}/ver`} target="_blank" rel="noreferrer" className="boton-principal">
+                    <a href={`${API_URL}/api/reclutador/documento/${documento.id_documento}/ver`} target="_blank" rel="noreferrer" className="boton-principal">
                         Ver documento
                         </a>
                     </article>

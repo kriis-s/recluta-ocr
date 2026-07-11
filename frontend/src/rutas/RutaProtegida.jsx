@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import API_URL from '../config/api';
 
 function RutaProtegida({ children, rolPermitido }) {
   const [cargando, setCargando] = useState(true);
@@ -8,7 +9,7 @@ function RutaProtegida({ children, rolPermitido }) {
   useEffect(() => {
     const verificarSesion = async () => {
       try {
-        const respuesta = await fetch('http://localhost:3001/api/autenticacion/perfil', {
+        const respuesta = await fetch(`${API_URL}/api/autenticacion/perfil`, {
           method: 'GET',
           credentials: 'include'
         });

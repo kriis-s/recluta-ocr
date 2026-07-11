@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "../estilos/CrearOfertaLaboral.css";
+import API_URL from '../config/api';
 
 const ofertaLaboralVacia = {
   titulo: "",
@@ -134,7 +135,7 @@ function CrearOfertaLaboral() {
 
       const ofertaPreparada = prepararOfertaLaboral(datosOferta);
 
-      const respuesta = await fetch("http://localhost:3001/api/ofertas/crear", {
+      const respuesta = await fetch(`${API_URL}/api/ofertas/crear`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

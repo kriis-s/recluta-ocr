@@ -5,6 +5,17 @@ const conexion = require('../config/conexion');
 
 const router = express.Router();
 
+function obtenerOpcionesCookie() {
+  const esProduccion = process.env.NODE_ENV === 'production';
+
+  return {
+    httpOnly: true,
+    sameSite: esProduccion ? 'none' : 'lax',
+    secure: esProduccion,
+    maxAge: 2 * 60 * 60 * 1000
+  };
+}
+
 router.post('/login', async (req, res) => {
   const { correo, password } = req.body || {};
 
@@ -53,12 +64,7 @@ router.post('/login', async (req, res) => {
       }
     );
 
-    res.cookie('token_recluta_ocr', token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
-      maxAge: 2 * 60 * 60 * 1000
-    });
+    res.cookie('token_recluta_ocr', token, obtenerOpcionesCookie());
 
     return res.json({
       ok: true,
@@ -122,11 +128,7 @@ router.get('/perfil', async (req, res) => {
 });
 
 router.post('/cerrar-sesion', (req, res) => {
-  res.clearCookie('token_recluta_ocr', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: false
-  });
+  res.clearCookie('token_recluta_ocr', obtenerOpcionesCookie());
 
   return res.json({
     ok: true,

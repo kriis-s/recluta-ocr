@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../estilos/IniciarSesion.css';
+import API_URL from '../config/api';
 
 function IniciarSesion() {
   const navegar = useNavigate();
@@ -74,7 +75,7 @@ function IniciarSesion() {
         password: formulario.contrasena
       };
 
-      const respuesta = await fetch('http://localhost:3001/api/autenticacion/login', {
+      const respuesta = await fetch(`${API_URL}/api/autenticacion/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

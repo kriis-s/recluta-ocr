@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import '../estilos/Registro.css';
+import API_URL from '../config/api';
 
 const formularioInicial = {
   rol: 'postulante',
@@ -115,7 +116,7 @@ function Registro() {
 
       const datosRegistro = prepararDatosRegistro();
 
-      const respuesta = await fetch('http://localhost:3001/api/postulantes/registro', {
+      const respuesta = await fetch(`${API_URL}/api/postulantes/registro`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

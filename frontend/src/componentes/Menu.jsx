@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import '../estilos/Menu.css';
+import API_URL from '../config/api';
+
 
 function Menu() {
   const navegar = useNavigate();
@@ -11,7 +13,7 @@ function Menu() {
   useEffect(() => {
     const verificarSesion = async () => {
       try {
-        const respuesta = await fetch('http://localhost:3001/api/autenticacion/perfil', {
+        const respuesta = await fetch(`${API_URL}/api/autenticacion/perfil`, {
           method: 'GET',
           credentials: 'include'
         });
@@ -34,7 +36,7 @@ function Menu() {
 
   const cerrarSesion = async () => {
     try {
-      await fetch('http://localhost:3001/api/autenticacion/cerrar-sesion', {
+      await fetch(`${API_URL}/api/autenticacion/cerrar-sesion`, {
         method: 'POST',
         credentials: 'include'
       });

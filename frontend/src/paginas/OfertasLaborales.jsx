@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import '../estilos/OfertasLaborales.css';
+import API_URL from '../config/api';
 
 function OfertasLaborales() {
   const [busqueda, setBusqueda] = useState('');
@@ -16,7 +17,7 @@ function OfertasLaborales() {
         setCargandoOfertas(true);
         setMensajeOfertas('');
 
-        const respuesta = await fetch('http://localhost:3001/api/ofertas/listar');
+        const respuesta = await fetch(`${API_URL}/api/ofertas/listar`);
         const datosRespuesta = await respuesta.json();
 
         if (!respuesta.ok) {
@@ -66,7 +67,7 @@ function OfertasLaborales() {
     setMensajePostulacion('');
     setTipoMensajePostulacion('');
 
-    const respuesta = await fetch('http://localhost:3001/api/postulaciones/crear', {
+    const respuesta = await fetch(`${API_URL}/api/postulaciones/crear`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
