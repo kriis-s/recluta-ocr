@@ -742,3 +742,46 @@ Se utilizaron datos ficticios para proteger información personal real durante l
 * Completar casos de prueba manuales.
 * Revisar documentación final.
 * Preparar despliegue web del sistema.
+
+## AVANCE 21 - 11/07/2026
+
+### Despliegue web de la plataforma
+
+### Actividad realizada
+
+Se realizó el despliegue online de la plataforma Recluta OCR para efectos de demostración académica.
+
+### Avances técnicos
+
+* Se preparó el backend para funcionar en entorno local y online.
+* Se configuró el backend en Google Cloud Run.
+* Se creó una instancia Cloud SQL MySQL para alojar la base de datos `reclutamiento_ocr`.
+* Se importó la base de datos demo a Cloud SQL.
+* Se configuró la conexión entre Cloud Run y Cloud SQL.
+* Se corrigieron permisos de la cuenta de servicio para permitir la conexión con Cloud SQL.
+* Se desplegó el frontend React/Vite en Vercel.
+* Se configuró la variable `VITE_API_URL` para conectar el frontend con el backend online.
+* Se configuró `FRONTEND_URL` en Cloud Run para permitir la conexión desde Vercel.
+* Se corrigió un problema de mayúsculas/minúsculas en el nombre del componente `CrearOfertaLaboral.jsx`.
+* Se validó el funcionamiento de la plataforma online.
+
+### URLs de demostración
+
+Frontend:
+
+https://recluta-ocr-ochre.vercel.app/
+
+Backend:
+
+https://recluta-ocr-git-750543766315.us-central1.run.app
+
+### Resultado obtenido
+
+La plataforma quedó publicada en internet y funcional para demostración académica. Se validó el flujo principal del sistema: inicio de sesión, gestión de ofertas, revisión de postulantes, datos OCR, selección de postulantes y exportación Excel final.
+
+### Pendiente
+
+* Completar casos de prueba manuales.
+* Revisar redacción final del documento.
+* Preparar guion de presentación.
+* Mantener controlado el uso de Cloud SQL para evitar consumo innecesario de crédito.
