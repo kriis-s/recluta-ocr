@@ -18,6 +18,7 @@ function DetallePostulante() {
   const [tipoMensajeEstado, setTipoMensajeEstado] = useState('');
   const [cargandoEstado, setCargandoEstado] = useState(false);
 
+  // La bandera evita actualizar estados si se abandona la página durante la carga.
   useEffect(function cargarDetallePostulacion() {
     let componenteActivo = true;
 
@@ -95,6 +96,7 @@ function DetallePostulante() {
 
     return new Date(fecha).toLocaleDateString('es-CL');
   }
+  // Los textos obtenidos por OCR pueden ser extensos, por eso se acortan en la vista.
   function obtenerResumenTexto(texto) {
     if (!texto) {
       return '';
@@ -138,6 +140,7 @@ function DetallePostulante() {
     return 'No confirmado';
   }
 
+  // El cambio de estado y su observación se guardan juntos para mantener el historial.
   async function guardarCambioEstado() {
     if (!idEstadoSeleccionado) {
       setMensajeEstado('Debe seleccionar un estado.');

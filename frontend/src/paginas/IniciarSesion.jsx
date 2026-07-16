@@ -24,6 +24,7 @@ function IniciarSesion() {
     });
   }
 
+  // Primero se validan los datos localmente para no enviar solicitudes incompletas.
   function validarFormulario() {
     if (!formulario.correo.trim()) {
       return 'Debe ingresar el correo electrónico.';
@@ -40,6 +41,7 @@ function IniciarSesion() {
     return '';
   }
 
+  // Cada tipo de usuario tiene un panel con opciones diferentes.
   function redirigirSegunRol(rolUsuario) {
     if (rolUsuario === 'POSTULANTE') {
       navegar('/panel-postulante');

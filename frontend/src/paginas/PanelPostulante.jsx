@@ -17,6 +17,7 @@ function PanelPostulante() {
   const [cargandoDocumentos, setCargandoDocumentos] = useState(true);
   const [mensajeDocumentos, setMensajeDocumentos] = useState('');
 
+  // Esta función se reutiliza al entrar al panel y después de subir un documento.
   async function cargarDocumentosPostulante(mostrarCarga = false) {
     try {
       if (mostrarCarga) {
@@ -52,9 +53,10 @@ function PanelPostulante() {
     }
   }
 
+  // Al abrir el panel se solicitan los datos personales y documentos en paralelo.
   useEffect(function cargarDatosPanel() {
-  async function obtenerDatosPanel() {
-    try {
+    async function obtenerDatosPanel() {
+      try {
       setCargandoPanel(true);
       setMensajePanel('');
 
@@ -78,14 +80,14 @@ function PanelPostulante() {
       setPostulante(datosRespuesta.postulante);
       setPostulaciones(datosRespuesta.postulaciones || []);
 
-    } catch (error) {
+      } catch (error) {
       console.error('Error al cargar panel postulante:', error);
       setMensajePanel('Error de conexión con el servidor.');
 
-    } finally {
-      setCargandoPanel(false);
+      } finally {
+        setCargandoPanel(false);
+      }
     }
-  }
 
   async function obtenerDocumentosIniciales() {
     try {
@@ -155,6 +157,7 @@ function PanelPostulante() {
     
     setArchivo(archivoSeleccionado);
   }
+  // FormData permite enviar el archivo junto con el tipo de documento seleccionado.
   async function manejarEnvioDocumento(evento) {
     evento.preventDefault();
 

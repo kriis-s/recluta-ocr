@@ -5,6 +5,7 @@ const conexion = require('../config/conexion');
 
 const router = express.Router();
 
+// En producción la cookie debe viajar por HTTPS para que el navegador la acepte.
 function obtenerOpcionesCookie() {
   const esProduccion = process.env.NODE_ENV === 'production';
 
@@ -43,6 +44,7 @@ router.post('/login', async (req, res) => {
 
     const usuario = usuarios[0];
 
+    // Se compara con el hash almacenado, nunca con la contraseña en texto plano.
     const passwordCorrecta = await bcrypt.compare(password, usuario.password);
 
     if (!passwordCorrecta) {

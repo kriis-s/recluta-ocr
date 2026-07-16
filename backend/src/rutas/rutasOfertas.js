@@ -4,17 +4,24 @@ const conexion = require('../config/conexion');
 
 const router = express.Router();
 
-const verificarReclutador = async(req, res, next) => {
+// Además de validar el token, se recupera el perfil usado para crear la oferta.
+const verificarReclutador = async (req, res, next) => {
   const token = req.cookies.token_recluta_ocr;
   if (!token) {
-    return res.status(401).json({ ok: false, error: 'No existe una sesion activa' });
+    return res.status(401).json({
+      ok: false,
+      error: 'No existe una sesion activa'
+    });
   }
-  
-    try {
+
+  try {
     const datosToken = jwt.verify(token, process.env.JWT_SECRETO);
 
-    if(datosToken.rol !== 'RECLUTADOR') {
-      return res.status(403).json({ ok: false, error: 'No tiene permisos para crear ofertas laborales.' });
+    if (datosToken.rol !== 'RECLUTADOR') {
+      return res.status(403).json({
+        ok: false,
+        error: 'No tiene permisos para crear ofertas laborales.'
+      });
     }
 
     const [reclutadores] = await conexion.query(
@@ -35,45 +42,54 @@ const verificarReclutador = async(req, res, next) => {
 };
 
 router.post('/crear', verificarReclutador, async (req, res) => {
-    const { titulo, descripcion, area, ubicacion, tipo_jornada, estado, empresa, sueldo } = req.body || {};
+  const {
+    titulo,
+    descripcion,
+    area,
+    ubicacion,
+    tipo_jornada,
+    estado,
+    empresa,
+    sueldo
+  } = req.body || {};
 
-      if (!titulo || !titulo.trim()) {
-        return res.status(400).json({
-          ok: false,
-          mensaje: 'Debe ingresar el título de la oferta laboral.'
-        });
-      }
+  if (!titulo || !titulo.trim()) {
+    return res.status(400).json({
+      ok: false,
+      mensaje: 'Debe ingresar el título de la oferta laboral.'
+    });
+  }
 
-      if (!empresa || !empresa.trim()) {
-        return res.status(400).json({
-          ok: false,
-          mensaje: 'Debe ingresar la empresa donde se trabajará.'
-        });
-      }
+  if (!empresa || !empresa.trim()) {
+    return res.status(400).json({
+      ok: false,
+      mensaje: 'Debe ingresar la empresa donde se trabajará.'
+    });
+  }
 
-      if (!sueldo || Number(sueldo) <= 0) {
-        return res.status(400).json({
-          ok: false,
-          mensaje: 'Debe ingresar un sueldo válido para la oferta laboral.'
-        });
-      }
+  if (!sueldo || Number(sueldo) <= 0) {
+    return res.status(400).json({
+      ok: false,
+      mensaje: 'Debe ingresar un sueldo válido para la oferta laboral.'
+    });
+  }
 
-    try {
-      const estadoOferta = estado || 'ACTIVA';
+  try {
+    const estadoOferta = estado || 'ACTIVA';
 
-      await conexion.query(
-        `INSERT INTO ofertas_laborales ( id_reclutador, titulo, empresa, sueldo, descripcion, area, ubicacion, tipo_jornada, estado)
+    await conexion.query(
+      `INSERT INTO ofertas_laborales ( id_reclutador, titulo, empresa, sueldo, descripcion, area, ubicacion, tipo_jornada, estado)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          req.id_reclutador,
-          titulo.trim(),
-          empresa.trim(),
-          Number(sueldo),
-          descripcion?.trim() || null,
-          area?.trim() || null,
-          ubicacion?.trim() || null,
-          tipo_jornada?.trim() || null,
-          estadoOferta
+      [
+        req.id_reclutador,
+        titulo.trim(),
+        empresa.trim(),
+        Number(sueldo),
+        descripcion?.trim() || null,
+        area?.trim() || null,
+        ubicacion?.trim() || null,
+        tipo_jornada?.trim() || null,
+        estadoOferta
       ]
     );
 
@@ -83,7 +99,7 @@ router.post('/crear', verificarReclutador, async (req, res) => {
     });
 
   } catch (error) {
-      console.error('Error al crear la oferta laboral:', error);
+    console.error('Error al crear la oferta laboral:', error);
 
     return res.status(500).json({
       ok: false,
@@ -101,6 +117,7 @@ router.get('/listar', async (req, res) => {
        ORDER BY fecha_publicacion DESC`
     );
 
+    // La descripción guardada contiene secciones que se separan para el listado.
     const ofertasFormateadas = ofertas.map(function formatearOferta(oferta) {
       const descripcion = oferta.descripcion || "";
       const modalidadEncontrada = descripcion.match(/Modalidad:\s*(.+)/i);
@@ -138,6 +155,51 @@ router.get('/listar', async (req, res) => {
     return res.status(500).json({
       ok: false,
       mensaje: "Error interno al listar las ofertas laborales."
+    });
+  }
+});
+
+router.get('/detalle/:id_oferta', async function obtenerDetalleOferta(req, res) {
+  try {
+    const { id_oferta } = req.params;
+
+    if (!id_oferta || Number.isNaN(Number(id_oferta))) {
+      return res.status(400).json({
+        mensaje: 'El identificador de la oferta no es válido.'
+      });
+    }
+
+    const [ofertas] = await conexion.query(
+      `SELECT
+        id_oferta,
+        id_reclutador,
+        titulo,
+        empresa,
+        sueldo,
+        descripcion,
+        area,
+        ubicacion,
+        tipo_jornada,
+        fecha_publicacion,
+        estado
+      FROM ofertas_laborales
+      WHERE id_oferta = ?`,
+      [id_oferta]
+    );
+
+    if (ofertas.length === 0) {
+      return res.status(404).json({
+        mensaje: 'La oferta laboral no existe.'
+      });
+    }
+
+    return res.json({
+      oferta: ofertas[0]
+    });
+  } catch (error) {
+    console.error('Error al obtener detalle de oferta:', error);
+    return res.status(500).json({
+      mensaje: 'Error interno al obtener el detalle de la oferta.'
     });
   }
 });

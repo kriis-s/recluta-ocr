@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import '../estilos/OfertasLaborales.css';
 import API_URL from '../config/api';
 
@@ -8,7 +9,7 @@ function OfertasLaborales() {
   const [cargandoOfertas, setCargandoOfertas] = useState(true);
   const [mensajeOfertas, setMensajeOfertas] = useState('');
   const [mensajePostulacion, setMensajePostulacion] = useState('');
-  const [tipoMensajePostulacion, setTipoMensajePostulacion] = useState(''); // 'exito' o 'error'
+  const [tipoMensajePostulacion, setTipoMensajePostulacion] = useState('');
   const [ofertaProcesando, setOfertaProcesando] = useState(null);
 
   useEffect(function cargarOfertasLaborales() {
@@ -46,6 +47,7 @@ function OfertasLaborales() {
   }
 
   function coincideConBusqueda(oferta) {
+    // Se normaliza el texto para que la búsqueda no dependa de mayúsculas.
     const textoBusqueda = busqueda.trim().toLowerCase();
 
     if (!textoBusqueda) {
@@ -62,44 +64,44 @@ function OfertasLaborales() {
   const ofertasFiltradas = ofertas.filter(coincideConBusqueda);
 
   async function manejarPostulacion(idOferta) {
-  try {
-    setOfertaProcesando(idOferta);
-    setMensajePostulacion('');
-    setTipoMensajePostulacion('');
+    try {
+      setOfertaProcesando(idOferta);
+      setMensajePostulacion('');
+      setTipoMensajePostulacion('');
 
-    const respuesta = await fetch(`${API_URL}/api/postulaciones/crear`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        id_oferta: idOferta
-      })
-    });
+      const respuesta = await fetch(`${API_URL}/api/postulaciones/crear`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          id_oferta: idOferta
+        })
+      });
 
-    const datosRespuesta = await respuesta.json();
+      const datosRespuesta = await respuesta.json();
 
-    if (!respuesta.ok) {
-      setMensajePostulacion(
-        datosRespuesta.mensaje || 'No fue posible realizar la postulación.'
-      );
+      if (!respuesta.ok) {
+        setMensajePostulacion(
+          datosRespuesta.mensaje || 'No fue posible realizar la postulación.'
+        );
+        setTipoMensajePostulacion('error');
+        return;
+      }
+
+      setMensajePostulacion('Postulación realizada correctamente.');
+      setTipoMensajePostulacion('exito');
+
+    } catch (error) {
+      console.error('Error al postular:', error);
+      setMensajePostulacion('Error de conexión con el servidor.');
       setTipoMensajePostulacion('error');
-      return;
+
+    } finally {
+      setOfertaProcesando(null);
     }
-
-    setMensajePostulacion('Postulación realizada correctamente.');
-    setTipoMensajePostulacion('exito');
-
-  } catch (error) {
-    console.error('Error al postular:', error);
-    setMensajePostulacion('Error de conexión con el servidor.');
-    setTipoMensajePostulacion('error');
-
-  } finally {
-    setOfertaProcesando(null);
   }
-}
 
   return (
     <main className="pagina-ofertas">
@@ -161,12 +163,14 @@ function OfertasLaborales() {
                       onClick={() => manejarPostulacion(oferta.id)}
                       disabled={ofertaProcesando === oferta.id}
                     >
-                      {ofertaProcesando === oferta.id ? 'Postulando...' : 'Postular'}
+                      {ofertaProcesando === oferta.id
+                        ? 'Postulando...'
+                        : 'Postular'}
                     </button>
 
-                    <button type="button" className="boton-secundario">
+                    <Link to={`/ofertas/${oferta.id}`} className="boton-secundario">
                       Ver detalle
-                    </button>
+                    </Link>
                   </div>
                 </article>
               );

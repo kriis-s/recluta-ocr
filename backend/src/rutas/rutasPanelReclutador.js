@@ -7,6 +7,7 @@ const { procesarDocumentoConOcr } = require('../servicios/servicioOcr');
 const router = express.Router();
 
 
+// Se normalizan ambos textos para comparar palabras sin depender de tildes o símbolos.
 function normalizarTexto(texto) {
   if (!texto) {
     return '';
@@ -23,25 +24,83 @@ function normalizarTexto(texto) {
 }
 
 function obtenerPalabrasClave(textoOferta) {
-  const palabrasComunes = [
+  const textoNormalizado = normalizarTexto(textoOferta);
+  const palabrasComunes = new Set([
     'para', 'con', 'por', 'del', 'los', 'las', 'una', 'uno', 'que',
     'sus', 'sin', 'como', 'esta', 'este', 'desde', 'entre', 'debe',
     'tener', 'ideal', 'laboral', 'oferta', 'cargo', 'requiere',
     'descripcion', 'requisitos', 'modalidad', 'jornada', 'tiempo',
-    'completo', 'empresa'
+    'completo', 'empresa', 'buscamos', 'incorporarse', 'nuestro',
+    'nuestra', 'equipo', 'equipos', 'persona', 'seleccionada', 'seleccionado',
+    'sera', 'responsable', 'utilizando', 'cumpliendo', 'estandares'
+  ]);
+
+  const iniciosGenericos = new Set([
+    'equipo', 'persona', 'responsable', 'estandares'
+  ]);
+
+  // Estas combinaciones se consideran un solo concepto dentro de una oferta.
+  const frasesConocidas = [
+    'grua horquilla',
+    'licencia conducir',
+    'manejo inventario',
+    'control calidad',
+    'atencion cliente',
+    'trabajo equipo',
+    'prevencion riesgos'
   ];
 
-  const textoNormalizado = normalizarTexto(textoOferta);
+  const frasesEncontradas = [];
+
+  frasesConocidas.forEach(function buscarFrase(frase) {
+    if (textoNormalizado.includes(frase)) {
+      frasesEncontradas.push(frase);
+    }
+  });
+
+  // También se reconocen conceptos unidos por "de", como "operario de bodega".
+  const patronFraseConDe = /\b([a-z0-9ñ]+) de ([a-z0-9ñ]+)\b/g;
+  let coincidenciaFrase = patronFraseConDe.exec(textoNormalizado);
+
+  while (coincidenciaFrase) {
+    const palabraInicial = coincidenciaFrase[1];
+    const palabraFinal = coincidenciaFrase[2];
+
+    if (
+      palabraInicial.length >= 4 &&
+      palabraFinal.length >= 4 &&
+      !palabrasComunes.has(palabraInicial) &&
+      !palabrasComunes.has(palabraFinal) &&
+      !iniciosGenericos.has(palabraInicial)
+    ) {
+      frasesEncontradas.push(`${palabraInicial} de ${palabraFinal}`);
+    }
+
+    coincidenciaFrase = patronFraseConDe.exec(textoNormalizado);
+  }
+
+  const palabrasIncluidasEnFrases = new Set(
+    frasesEncontradas.flatMap(function separarFrase(frase) {
+      return frase.split(' ').filter(function quitarConector(palabra) {
+        return palabra !== 'de';
+      });
+    })
+  );
 
   const palabras = textoNormalizado
     .split(' ')
     .filter(function filtrarPalabra(palabra) {
-      return palabra.length >= 4 && !palabrasComunes.includes(palabra);
+      return (
+        palabra.length >= 4 &&
+        !palabrasComunes.has(palabra) &&
+        !palabrasIncluidasEnFrases.has(palabra)
+      );
     });
 
-  return [...new Set(palabras)].slice(0, 15);
+  return [...new Set([...frasesEncontradas, ...palabras])].slice(0, 20);
 }
 
+// La coincidencia representa cuántas palabras clave de la oferta aparecen en el CV.
 function calcularCoincidenciaCurriculum(textoOferta, textoCurriculum) {
   const palabrasClave = obtenerPalabrasClave(textoOferta);
   const curriculumNormalizado = normalizarTexto(textoCurriculum);
@@ -54,12 +113,22 @@ function calcularCoincidenciaCurriculum(textoOferta, textoCurriculum) {
     };
   }
 
-  const encontradas = palabrasClave.filter(function buscarPalabra(palabra) {
-    return curriculumNormalizado.includes(palabra);
-  });
+  function curriculumContieneConcepto(concepto) {
+    const partesConcepto = concepto
+      .split(' ')
+      .filter(function quitarConector(palabra) {
+        return palabra !== 'de';
+      });
+
+    return partesConcepto.every(function buscarParte(palabra) {
+      return curriculumNormalizado.includes(palabra);
+    });
+  }
+
+  const encontradas = palabrasClave.filter(curriculumContieneConcepto);
 
   const faltantes = palabrasClave.filter(function buscarFaltante(palabra) {
-    return !curriculumNormalizado.includes(palabra);
+    return !curriculumContieneConcepto(palabra);
   });
 
   const porcentaje = Math.round((encontradas.length / palabrasClave.length) * 100);
@@ -71,6 +140,7 @@ function calcularCoincidenciaCurriculum(textoOferta, textoCurriculum) {
   };
 }
 
+// Los documentos finales se procesan uno a uno para registrar errores por separado.
 async function procesarDocumentosFinalesPostulante(datosPostulante) {
   const [documentos] = await conexion.query(
     `SELECT
@@ -560,6 +630,7 @@ router.put('/postulacion/:id_postulacion/estado', verificarReclutador, async (re
   }
 });
 
+// El archivo final incluye solamente las postulaciones seleccionadas en el panel.
 router.post('/exportar-excel-final', verificarReclutador, async (req, res) => {
   const { id_postulaciones } = req.body || {};
 

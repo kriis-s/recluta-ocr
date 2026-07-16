@@ -35,6 +35,7 @@ function Registro() {
     });
   }
 
+  // Las validaciones siguen el mismo orden en que aparecen los campos del formulario.
   function validarFormulario() {
     if (!formulario.nombre.trim()) {
       return 'Debe ingresar el nombre.';
@@ -75,6 +76,7 @@ function Registro() {
     return '';
   }
 
+  // Se envían valores nulos en los datos opcionales que quedaron vacíos.
   function prepararDatosRegistro() {
     const direccionCompleta = `${formulario.direccion.trim()} ${formulario.comuna.trim()}`.trim();
 

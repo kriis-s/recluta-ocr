@@ -11,6 +11,7 @@ const router = express.Router();
 const carpetaDocumentos = path.join(__dirname, '../../archivos/documentos');
 
 
+// La carpeta se crea al iniciar para evitar errores en la primera carga.
 if (!fs.existsSync(carpetaDocumentos)) {
   fs.mkdirSync(carpetaDocumentos, { recursive: true });
 }
@@ -32,6 +33,7 @@ const almacenamiento = multer.diskStorage({
   }
 });
 
+// Se limita el tipo y tamaño de archivo antes de iniciar el procesamiento OCR.
 const filtroArchivo = function validarArchivo(req, file, cb) {
   const tiposPermitidos = [
     'application/pdf',
@@ -146,6 +148,7 @@ router.post('/cargar', verificarPostulante, subirArchivo.single('archivo'), asyn
 
     let idDocumento;
 
+    // Si ya existe el mismo tipo de documento, se reemplaza su información.
     if (documentosExistentes.length > 0) {
       idDocumento = documentosExistentes[0].id_documento;
 

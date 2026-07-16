@@ -25,6 +25,7 @@ router.post("/registro", async (req, res) => {
     });
   }
 
+  // La transacción evita crear un usuario sin su perfil de postulante.
   let conexionBaseDatos;
 
   try {
@@ -60,6 +61,7 @@ router.post("/registro", async (req, res) => {
       });
     }
 
+    // La contraseña se cifra antes de guardarla en la base de datos.
     const passwordCifrada = await bcrypt.hash(password, 10);
 
     const [resultadoUsuario] = await conexionBaseDatos.query(

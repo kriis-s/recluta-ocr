@@ -23,6 +23,7 @@ function PanelReclutador() {
     setCoincidenciaMinima(Number(evento.target.value));
   }
 
+  // Se conserva una lista de identificadores para la exportación seleccionada.
   function manejarSeleccionPostulacion(idPostulacion) {
     setMensajeExcel('');
 
@@ -127,6 +128,7 @@ function PanelReclutador() {
     return 'Pendiente OCR';
   }
 
+  // Se aplican todos los filtros antes de ordenar los resultados por coincidencia.
   const postulantesFiltrados = postulantes
     .filter(function filtrarPostulante(postulante) {
       const textoBusqueda = busqueda.trim().toLowerCase();
@@ -158,10 +160,11 @@ function PanelReclutador() {
       return Number(b.coincidencia_curriculum || 0) - Number(a.coincidencia_curriculum || 0);
     });
 
+  // La bandera impide actualizar el componente si el usuario sale durante la consulta.
   useEffect(function cargarPanelReclutador() {
-  let componenteActivo = true;
+    let componenteActivo = true;
 
-  async function obtenerPanelReclutador() {
+    async function obtenerPanelReclutador() {
       try {
         const respuesta = await fetch(
           `${API_URL}/api/reclutador/panel`,

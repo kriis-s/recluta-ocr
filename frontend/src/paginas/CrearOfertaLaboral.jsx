@@ -27,6 +27,7 @@ const jornadasDisponibles = [
 const modalidadesDisponibles = ["Presencial", "Hibrida", "Remota"];
 const estadosDisponibles = ["Activa", "Inactiva"];
 
+// Se adapta el formulario a los nombres de campos que espera la API.
 function prepararOfertaLaboral(datosOferta) {
   const descripcionCompleta = `modalidad: ${datosOferta.modalidad}
   descripción: ${datosOferta.descripcion.trim()}
@@ -63,6 +64,7 @@ function CrearOfertaLaboral() {
   }
 
   function validarOfertaLaboral() {
+    // Se eliminan espacios para evitar aceptar campos que parecen completos.
     const tituloOferta = datosOferta.titulo.trim();
     const empresaOferta = datosOferta.empresa.trim();
     const sueldoOferta = datosOferta.sueldo;
@@ -127,46 +129,52 @@ function CrearOfertaLaboral() {
       setTipoMensajeFormulario("error");
       return;
     }
+
     try {
       setCargando(true);
       setMensajeFormulario("");
       setTipoMensajeFormulario("");
-    
-
       const ofertaPreparada = prepararOfertaLaboral(datosOferta);
 
       const respuesta = await fetch(`${API_URL}/api/ofertas/crear`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "include",
-      body: JSON.stringify(ofertaPreparada)
-    });
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify(ofertaPreparada)
+      });
 
-    const datosRespuesta = await respuesta.json();
+      const datosRespuesta = await respuesta.json();
 
-    if (!respuesta.ok) {
-      setMensajeFormulario(datosRespuesta.mensaje || datosRespuesta.error || "Error al crear la oferta laboral.");
+      if (!respuesta.ok) {
+        setMensajeFormulario(
+          datosRespuesta.mensaje ||
+            datosRespuesta.error ||
+            "Error al crear la oferta laboral."
+        );
+        setTipoMensajeFormulario("error");
+        setCargando(false);
+        return;
+      }
+
+      setMensajeFormulario("Oferta laboral creada correctamente.");
+      setTipoMensajeFormulario("exito");
+      limpiarDatosFormulario();
+
+    } catch (error) {
+      console.error("Error al crear la oferta laboral:", error);
+
+      setMensajeFormulario(
+        "Error al crear la oferta laboral. Intente nuevamente."
+      );
       setTipoMensajeFormulario("error");
+
+    } finally {
       setCargando(false);
-      return;
     }
-
-    setMensajeFormulario("Oferta laboral creada correctamente.");
-    setTipoMensajeFormulario("exito");
-    limpiarDatosFormulario();
-
-  } catch (error) {
-    console.error("Error al crear la oferta laboral:", error);
-
-    setMensajeFormulario("Error al crear la oferta laboral. Intente nuevamente.");
-    setTipoMensajeFormulario("error");
-
-  } finally {
-    setCargando(false);
   }
-}    
+
   return (
     <main className="pagina-crear-oferta">
       <div className="crear-oferta-contenedor">
