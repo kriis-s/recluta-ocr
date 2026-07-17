@@ -5,13 +5,15 @@ import API_URL from '../config/api';
 
 function PanelReclutador() {
   const [busqueda, setBusqueda] = useState('');
-  const [ofertaSeleccionada, setOfertaSeleccionada] = useState();
+  const [ofertaSeleccionada, setOfertaSeleccionada] = useState('');
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState('');
+  const [ordenSeleccionado, setOrdenSeleccionado] = useState('recientes');
   const [ofertas, setOfertas] = useState([]);
   const [postulantes, setPostulantes] = useState([]);
   const [resumen, setResumen] = useState({ofertas_activas: 0, total_postulantes: 0, documentos_cargados: 0, documentos_procesados: 0 });
   const [cargandoPanel, setCargandoPanel] = useState(true);
   const [mensajePanel, setMensajePanel] = useState('');
-  const [coincidenciaMinima, setCoincidenciaMinima] = useState(0);
+  const [coincidenciaMinima, setCoincidenciaMinima] = useState(70);
   const [postulacionesSeleccionadas, setPostulacionesSeleccionadas] = useState([]);
   const [mensajeExcel, setMensajeExcel] = useState('');
   
@@ -21,6 +23,14 @@ function PanelReclutador() {
   }
   function manejarCambioCoincidencia(evento) {
     setCoincidenciaMinima(Number(evento.target.value));
+  }
+
+  function limpiarFiltros() {
+    setBusqueda('');
+    setOfertaSeleccionada('');
+    setEstadoSeleccionado('');
+    setCoincidenciaMinima(70);
+    setOrdenSeleccionado('recientes');
   }
 
   // Se conserva una lista de identificadores para la exportación seleccionada.
@@ -128,7 +138,7 @@ function PanelReclutador() {
     return 'Pendiente OCR';
   }
 
-  // Se aplican todos los filtros antes de ordenar los resultados por coincidencia.
+  // Los filtros de oferta y estado se pueden usar al mismo tiempo.
   const postulantesFiltrados = postulantes
     .filter(function filtrarPostulante(postulante) {
       const textoBusqueda = busqueda.trim().toLowerCase();
@@ -154,11 +164,23 @@ function PanelReclutador() {
       const coincidePorcentaje =
         Number(postulante.coincidencia_curriculum || 0) >= coincidenciaMinima;
 
-      return coincideBusqueda && coincidePorOferta && coincidePorcentaje;
+      const coincidePorEstado =
+        !estadoSeleccionado || postulante.estado === estadoSeleccionado;
+
+      return coincideBusqueda && coincidePorOferta && coincidePorEstado && coincidePorcentaje;
     })
-    .sort(function ordenarPorCoincidencia(a, b) {
-      return Number(b.coincidencia_curriculum || 0) - Number(a.coincidencia_curriculum || 0);
+    .sort(function ordenarPostulantes(a, b) {
+      if (ordenSeleccionado === 'coincidencia') {
+        return Number(b.coincidencia_curriculum || 0) - Number(a.coincidencia_curriculum || 0);
+      }
+
+      // El identificador mayor corresponde a la postulación más reciente.
+      return Number(b.id_postulacion) - Number(a.id_postulacion);
     });
+
+  const estadosPostulantes = [...new Set(postulantes.map(function obtenerEstado(postulante) {
+    return postulante.estado;
+  }).filter(Boolean))];
 
   // La bandera impide actualizar el componente si el usuario sale durante la consulta.
   useEffect(function cargarPanelReclutador() {
@@ -319,14 +341,65 @@ function PanelReclutador() {
             </div>
 
             <div className="reclutador-filtros">
-              <label htmlFor="busquedaPostulante">Buscar postulante</label>
-              <input type="text" id="busquedaPostulante" value={busqueda} onChange={manejarCambioBusqueda} placeholder="Buscar por nombre, RUT, oferta o estado"/>
-              <select value={coincidenciaMinima} onChange={manejarCambioCoincidencia}>
-                <option value={0}>Todas las coincidencias</option>
-                <option value={25}>Desde 25%</option>
-                <option value={50}>Desde 50%</option>
-                <option value={75}>Desde 75%</option>
-              </select>
+              <h3>Filtrar postulantes</h3>
+
+              <div className="reclutador-filtros-grid">
+                <div className="reclutador-campo-busqueda">
+                  <label htmlFor="busquedaPostulante">Palabra clave</label>
+                  <input
+                    type="text"
+                    id="busquedaPostulante"
+                    value={busqueda}
+                    onChange={manejarCambioBusqueda}
+                    placeholder="Nombre, RUT o palabra encontrada"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="filtroOferta">Oferta</label>
+                  <select id="filtroOferta" value={ofertaSeleccionada} onChange={(evento) => setOfertaSeleccionada(evento.target.value)}>
+                    <option value="">Todas las ofertas</option>
+                    {ofertas.map(function mostrarOfertaFiltro(oferta) {
+                      return <option key={oferta.id_oferta} value={oferta.id_oferta}>{oferta.titulo}</option>;
+                    })}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="filtroEstado">Estado</label>
+                  <select id="filtroEstado" value={estadoSeleccionado} onChange={(evento) => setEstadoSeleccionado(evento.target.value)}>
+                    <option value="">Todos los estados</option>
+                    {estadosPostulantes.map(function mostrarEstadoFiltro(estado) {
+                      return <option key={estado} value={estado}>{estado}</option>;
+                    })}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="filtroCoincidencia">Palabras clave</label>
+                  <select id="filtroCoincidencia" value={coincidenciaMinima} onChange={manejarCambioCoincidencia}>
+                    <option value={0}>Cualquier porcentaje</option>
+                    <option value={50}>50% o más</option>
+                    <option value={70}>70% o más</option>
+                    <option value={80}>80% o más</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="ordenPostulantes">Ordenar por</label>
+                  <select id="ordenPostulantes" value={ordenSeleccionado} onChange={(evento) => setOrdenSeleccionado(evento.target.value)}>
+                    <option value="recientes">Más recientes</option>
+                    <option value="coincidencia">Mayor coincidencia</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="reclutador-filtros-pie">
+                <span>{postulantesFiltrados.length} postulante(s) encontrado(s)</span>
+                <button type="button" className="reclutador-limpiar-filtros" onClick={limpiarFiltros}>
+                  Limpiar filtros
+                </button>
+              </div>
             </div>
               {ofertaSeleccionada && (
                 <div className="reclutador-filtro-activo">
@@ -389,12 +462,6 @@ function PanelReclutador() {
                           </p>
                         )}
                       </div>
-
-                      {postulante.palabras_encontradas?.length > 0 && (
-                        <p>
-                          Palabras encontradas: {postulante.palabras_encontradas.join(', ')}
-                        </p>
-                      )}
 
                       <span className={`reclutador-estado ${obtenerClaseEstado(postulante.estado)}`}>
                         {postulante.estado}

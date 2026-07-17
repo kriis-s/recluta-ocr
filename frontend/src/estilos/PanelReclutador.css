@@ -127,6 +127,26 @@
 
 .reclutador-filtros {
   margin-bottom: 20px;
+  padding: 16px;
+  background-color: #f8fafc;
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+}
+
+.reclutador-filtros h3 {
+  margin-bottom: 14px;
+  color: var(--color-secundario);
+  font-size: 18px;
+}
+
+.reclutador-filtros-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.reclutador-campo-busqueda {
+  grid-column: 1 / -1;
 }
 
 .reclutador-filtros label {
@@ -136,17 +156,46 @@
   margin-bottom: 8px;
 }
 
-.reclutador-filtros input {
+.reclutador-filtros input,
+.reclutador-filtros select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--color-borde);
   border-radius: 8px;
   font-size: 15px;
   outline: none;
+  background-color: var(--color-blanco);
 }
 
-.reclutador-filtros input:focus {
+.reclutador-filtros input:focus,
+.reclutador-filtros select:focus {
   border-color: var(--color-primario);
+}
+
+.reclutador-filtros-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.reclutador-limpiar-filtros {
+  padding: 8px 12px;
+  color: var(--color-primario);
+  background-color: var(--color-blanco);
+  border: 1px solid var(--color-primario);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+/* Evita que el listado alargue demasiado toda la página. */
+.reclutador-tarjeta:nth-child(2) > .reclutador-listado {
+  max-height: 900px;
+  padding-right: 6px;
+  overflow-y: auto;
 }
 
 .reclutador-acciones {
@@ -307,5 +356,18 @@
 
   .reclutador-acciones button {
     width: 100%;
+  }
+
+  .reclutador-filtros-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reclutador-campo-busqueda {
+    grid-column: auto;
+  }
+
+  .reclutador-filtros-pie {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
