@@ -1,8 +1,10 @@
+CREATE DATABASE  IF NOT EXISTS `reclutamiento_ocr` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `reclutamiento_ocr`;
 -- MySQL dump 10.13  Distrib 8.0.46, for Win64 (x86_64)
 --
--- Host: localhost    Database: reclutamiento_ocr
+-- Host: Google Cloud SQL    Database: reclutamiento_ocr
 -- ------------------------------------------------------
--- Server version	8.0.46
+-- Server version	8.4.8-google
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -14,6 +16,10 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- GTID state at the beginning of the backup 
+--
 
 --
 -- Table structure for table `datos_ocr`
@@ -32,11 +38,15 @@ CREATE TABLE `datos_ocr` (
   `institucion_detectada` varchar(150) DEFAULT NULL,
   `confianza` decimal(5,2) DEFAULT NULL,
   `fecha_procesamiento` datetime DEFAULT CURRENT_TIMESTAMP,
+  `fecha_emision_detectada` date DEFAULT NULL,
+  `tipo_institucion` varchar(50) DEFAULT NULL,
+  `coincide_rut` tinyint(1) DEFAULT '0',
+  `coincide_nombre` tinyint(1) DEFAULT '0',
+  `observacion_validacion` text,
   PRIMARY KEY (`id_ocr`),
-  UNIQUE KEY `id_documento` (`id_documento`),
   UNIQUE KEY `uq_datos_ocr_documento` (`id_documento`),
   CONSTRAINT `datos_ocr_ibfk_1` FOREIGN KEY (`id_documento`) REFERENCES `documentos` (`id_documento`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -48,7 +58,8 @@ DROP TABLE IF EXISTS `documentos`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `documentos` (
   `id_documento` int NOT NULL AUTO_INCREMENT,
-  `id_postulacion` int NOT NULL,
+  `id_postulante` int NOT NULL,
+  `id_postulacion` int DEFAULT NULL,
   `tipo_documento` enum('CEDULA','CURRICULUM','CERTIFICADO_SALUD','CERTIFICADO_PREVISIONAL','OTRO') NOT NULL,
   `nombre_archivo` varchar(255) NOT NULL,
   `ruta_archivo` varchar(255) NOT NULL,
@@ -57,8 +68,10 @@ CREATE TABLE `documentos` (
   `estado_procesamiento` enum('PENDIENTE','PROCESADO','ERROR') DEFAULT 'PENDIENTE',
   PRIMARY KEY (`id_documento`),
   KEY `id_postulacion` (`id_postulacion`),
-  CONSTRAINT `documentos_ibfk_1` FOREIGN KEY (`id_postulacion`) REFERENCES `postulaciones` (`id_postulacion`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `fk_documentos_postulantes` (`id_postulante`),
+  CONSTRAINT `documentos_ibfk_1` FOREIGN KEY (`id_postulacion`) REFERENCES `postulaciones` (`id_postulacion`),
+  CONSTRAINT `fk_documentos_postulantes` FOREIGN KEY (`id_postulante`) REFERENCES `postulantes` (`id_postulante`)
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -74,7 +87,7 @@ CREATE TABLE `estados_postulacion` (
   `descripcion` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id_estado`),
   UNIQUE KEY `nombre_estado` (`nombre_estado`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -88,16 +101,20 @@ CREATE TABLE `ofertas_laborales` (
   `id_oferta` int NOT NULL AUTO_INCREMENT,
   `id_reclutador` int NOT NULL,
   `titulo` varchar(150) NOT NULL,
+  `empresa` varchar(150) DEFAULT NULL,
+  `sueldo` decimal(10,2) DEFAULT NULL,
   `descripcion` text,
+  `requisitos` text,
   `area` varchar(100) DEFAULT NULL,
   `ubicacion` varchar(150) DEFAULT NULL,
   `tipo_jornada` varchar(50) DEFAULT NULL,
+  `modalidad` varchar(50) DEFAULT NULL,
   `fecha_publicacion` datetime DEFAULT CURRENT_TIMESTAMP,
   `estado` enum('ACTIVA','INACTIVA') DEFAULT 'ACTIVA',
   PRIMARY KEY (`id_oferta`),
   KEY `id_reclutador` (`id_reclutador`),
   CONSTRAINT `ofertas_laborales_ibfk_1` FOREIGN KEY (`id_reclutador`) REFERENCES `reclutadores` (`id_reclutador`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -121,7 +138,7 @@ CREATE TABLE `postulaciones` (
   CONSTRAINT `postulaciones_ibfk_1` FOREIGN KEY (`id_postulante`) REFERENCES `postulantes` (`id_postulante`),
   CONSTRAINT `postulaciones_ibfk_2` FOREIGN KEY (`id_oferta`) REFERENCES `ofertas_laborales` (`id_oferta`),
   CONSTRAINT `postulaciones_ibfk_3` FOREIGN KEY (`id_estado`) REFERENCES `estados_postulacion` (`id_estado`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -139,14 +156,15 @@ CREATE TABLE `postulantes` (
   `apellido_paterno` varchar(100) NOT NULL,
   `apellido_materno` varchar(100) DEFAULT NULL,
   `fecha_nacimiento` date DEFAULT NULL,
+  `sexo` enum('MASCULINO','FEMENINO') DEFAULT NULL,
   `telefono` varchar(20) DEFAULT NULL,
   `direccion` varchar(255) DEFAULT NULL,
+  `comuna` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id_postulante`),
-  UNIQUE KEY `rut` (`rut`),
   UNIQUE KEY `uq_postulantes_rut` (`rut`),
   UNIQUE KEY `uq_postulantes_usuario` (`id_usuario`),
   CONSTRAINT `postulantes_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -165,7 +183,7 @@ CREATE TABLE `reclutadores` (
   PRIMARY KEY (`id_reclutador`),
   UNIQUE KEY `uq_reclutadores_usuario` (`id_usuario`),
   CONSTRAINT `reclutadores_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -182,9 +200,8 @@ CREATE TABLE `usuarios` (
   `rol` enum('POSTULANTE','RECLUTADOR') NOT NULL,
   `fecha_registro` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_usuario`),
-  UNIQUE KEY `correo` (`correo`),
   UNIQUE KEY `uq_usuarios_correo` (`correo`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -196,4 +213,4 @@ CREATE TABLE `usuarios` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-29 15:34:51
+-- Dump completed on 2026-07-18  1:08:02
