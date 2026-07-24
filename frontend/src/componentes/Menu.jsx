@@ -51,10 +51,6 @@ function Menu() {
   return (
     <header className="menu">
       <div className="menu-contenedor">
-        <NavLink to="/" className="menu-logo">
-          Plataforma OCR
-        </NavLink>
-
         <nav className="menu-navegacion">
           <NavLink to="/" className="menu-enlace">
             Inicio
@@ -93,7 +89,7 @@ function Menu() {
           )}  
 
           {usuario && (
-            <button type="button" className="menu-boton" onClick={cerrarSesion}>
+            <button type="button" className="menu-boton-salir" onClick={cerrarSesion}>
               Cerrar sesión
             </button>
           )}

@@ -1,29 +1,85 @@
-nav {
+.menu-navegacion {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
   background: #1e3a8a;
   color: white;
   padding: 15px 30px;
 }
 
-nav ul {
+.menu-navegacion ul {
   display: flex;
   gap: 20px;
   list-style: none;
 }
 
-nav a {
+.menu-navegacion a {
   color: white;
   text-decoration: none;
 }
 
-nav a:hover {
+.menu-navegacion a:hover {
   text-decoration: underline;
 }
 
 .menu-boton-salir {
-  border: none;
+  padding: 9px 16px;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  background-color: #fee2e2;
+  color: #991b1b;
   cursor: pointer;
   font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.menu-boton-salir:hover {
+  background-color: #fecaca;
+  border-color: #f87171;
+  transform: translateY(-1px);
+}
+
+.menu-boton-salir:focus-visible {
+  outline: 3px solid rgba(254, 202, 202, 0.65);
+  outline-offset: 2px;
+}
+
+.menu-boton-salir:active {
+  background-color: #fca5a5;
+  transform: translateY(0);
+}
+
+/* Tablet: los elementos se reparten en varias filas */
+@media (max-width: 768px) {
+  .menu-navegacion {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px 24px;
+    padding: 14px 20px;
+  }
+}
+
+/* Móvil: cada opción del menú ocupa su propia fila */
+@media (max-width: 480px) {
+  .menu-navegacion {
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+  }
+
+  .menu-enlace,
+  .menu-boton,
+  .menu-boton-salir {
+    width: 100%;
+    padding: 10px 12px;
+    text-align: center;
+  }
+
+  .menu-boton-salir {
+    margin-top: 4px;
+  }
 }
