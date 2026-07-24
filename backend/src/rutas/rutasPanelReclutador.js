@@ -32,7 +32,12 @@ function obtenerPalabrasClave(textoOferta) {
     'descripcion', 'requisitos', 'modalidad', 'jornada', 'tiempo',
     'completo', 'empresa', 'buscamos', 'incorporarse', 'nuestro',
     'nuestra', 'equipo', 'equipos', 'persona', 'seleccionada', 'seleccionado',
-    'sera', 'responsable', 'utilizando', 'cumpliendo', 'estandares'
+    'sera', 'seran', 'responsable', 'utilizando', 'cumpliendo', 'estandares',
+    'ingreso', 'ingresos', 'ingresa', 'ingresar', 'sale', 'actualizar',
+    'actualiza', 'actualizacion', 'apoyar', 'revisar', 'comparar',
+    'coordinar', 'organizar', 'mantener', 'funciones', 'productos',
+    'recibidos', 'documentos', 'areas', 'operativas', 'capacidad',
+    'deseable', 'disponibilidad', 'basico', 'basica'
   ]);
 
   const iniciosGenericos = new Set([
@@ -97,13 +102,17 @@ function obtenerPalabrasClave(textoOferta) {
       );
     });
 
-  return [...new Set([...frasesEncontradas, ...palabras])].slice(0, 20);
+  // Se limita la comparación a siete conceptos útiles. Así, cuatro
+  // coincidencias relevantes equivalen al 57% y el texto narrativo de la
+  // oferta no reduce injustamente el resultado.
+  return [...new Set([...frasesEncontradas, ...palabras])].slice(0, 7);
 }
 
 // La coincidencia representa cuántas palabras clave de la oferta aparecen en el CV.
 function calcularCoincidenciaCurriculum(textoOferta, textoCurriculum) {
   const palabrasClave = obtenerPalabrasClave(textoOferta);
   const curriculumNormalizado = normalizarTexto(textoCurriculum);
+  const palabrasCurriculum = new Set(curriculumNormalizado.split(' '));
 
   if (palabrasClave.length === 0 || !curriculumNormalizado) {
     return {
@@ -121,7 +130,7 @@ function calcularCoincidenciaCurriculum(textoOferta, textoCurriculum) {
       });
 
     return partesConcepto.every(function buscarParte(palabra) {
-      return curriculumNormalizado.includes(palabra);
+      return palabrasCurriculum.has(palabra);
     });
   }
 

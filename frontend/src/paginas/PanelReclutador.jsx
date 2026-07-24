@@ -13,7 +13,7 @@ function PanelReclutador() {
   const [resumen, setResumen] = useState({ofertas_activas: 0, total_postulantes: 0, documentos_cargados: 0, documentos_procesados: 0 });
   const [cargandoPanel, setCargandoPanel] = useState(true);
   const [mensajePanel, setMensajePanel] = useState('');
-  const [coincidenciaMinima, setCoincidenciaMinima] = useState(70);
+  const [coincidenciaMinima, setCoincidenciaMinima] = useState(0);
   const [postulacionesSeleccionadas, setPostulacionesSeleccionadas] = useState([]);
   const [mensajeExcel, setMensajeExcel] = useState('');
   
@@ -29,7 +29,7 @@ function PanelReclutador() {
     setBusqueda('');
     setOfertaSeleccionada('');
     setEstadoSeleccionado('');
-    setCoincidenciaMinima(70);
+    setCoincidenciaMinima(0);
     setOrdenSeleccionado('recientes');
   }
 
@@ -456,11 +456,6 @@ function PanelReclutador() {
                           </p>
                         )}
 
-                        {postulante.palabras_faltantes?.length > 0 && (
-                          <p className="palabras-ocr palabras-faltantes">
-                            Palabras faltantes: {postulante.palabras_faltantes.join(', ')}
-                          </p>
-                        )}
                       </div>
 
                       <span className={`reclutador-estado ${obtenerClaseEstado(postulante.estado)}`}>
